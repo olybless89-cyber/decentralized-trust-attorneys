@@ -3,9 +3,11 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/includes/wallet.php';
 $user = require_login();
 
-$address = get_or_create_wallet_address($user);
 $asset = $_GET['asset'] ?? 'BTC';
 if (!in_array($asset, wallet_supported_assets(), true)) $asset = 'BTC';
+$address = get_or_create_wallet_address($user, $asset);
+$network = wallet_network_labels()[$asset] ?? null;
+$note = wallet_network_notes()[$asset] ?? null;
 
 $pageTitle = 'Receive';
 require __DIR__ . '/includes/dash_header.php';
@@ -31,6 +33,12 @@ require __DIR__ . '/includes/dash_header.php';
     <span id="walletAddr"><?= e($address) ?></span>
     <button type="button" class="btn btn-outline btn-sm" onclick="copyAddr()">Copy</button>
   </div>
+  <?php if ($network): ?>
+    <p class="hint" style="text-align:center;margin-top:8px"><strong>Network:</strong> <?= e($network) ?></p>
+  <?php endif; ?>
+  <?php if ($note): ?>
+    <p class="hint" style="text-align:center;margin-top:8px"><?= e($note) ?></p>
+  <?php endif; ?>
   <p class="hint" style="text-align:center;margin-top:14px">Only send <?= e($asset) ?> to this address. Deposits are credited to your balance once confirmed by our team.</p>
 </div>
 
