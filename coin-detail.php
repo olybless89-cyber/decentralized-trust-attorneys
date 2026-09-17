@@ -110,7 +110,7 @@ require __DIR__ . '/includes/dash_header.php';
   </div>
   <div class="cd-balance-sub">
     USD Value: <span id="cdUsdValue">
-      <?= $existingUsd > 0 ? fmt_money($existingUsd) : '$0.00' ?>
+      <?= $existingCrypto > 0 ? '<span style="color:var(--muted);font-size:13px">Calculating live price…</span>' : '$0.00' ?>
     </span>
     &nbsp;&bull;&nbsp; Last synced: <?= e($syncedAt) ?>
   </div>
@@ -142,7 +142,7 @@ require __DIR__ . '/includes/dash_header.php';
   <div class="cd-add-balance-sub">
     Current price: <strong id="cdPriceForCalc">loading…</strong><br>
     <?php if ($existingCrypto > 0): ?>
-      Existing balance: <span id="cdExistingHint"><?= rtrim(rtrim(number_format($existingCrypto, 10), '0'), '.') ?> <?= e($ticker) ?> (<?= fmt_money($existingUsd) ?>)</span> — new deposit will be <em>added</em>.
+      Existing balance: <span id="cdExistingHint"><?= rtrim(rtrim(number_format($existingCrypto, 10), '0'), '.') ?> <?= e($ticker) ?> (<span id="cdExistingUsdHint">…</span>)</span> — new deposit will be <em>added</em>.
     <?php else: ?>
       <span style="color:var(--muted)">No balance yet — add your first deposit below.</span>
     <?php endif; ?>
@@ -247,6 +247,8 @@ $coinTxs = $txStmt->fetchAll();
         if (existingCrypto > 0 && livePrice > 0) {
           var liveUsd = existingCrypto * livePrice;
           document.getElementById('cdUsdValue').textContent = fmtUsd(liveUsd);
+          var hintEl = document.getElementById('cdExistingUsdHint');
+          if (hintEl) hintEl.textContent = fmtUsd(liveUsd);
         }
       })
       .catch(function(){

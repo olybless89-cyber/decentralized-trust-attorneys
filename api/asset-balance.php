@@ -33,8 +33,15 @@ $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 
 // ── GET all balances ─────────────────────────────────────────────────────────
 if ($method === 'GET' && $action === 'all') {
+    // Admins may pass ?_uid=X to fetch a specific user's balances for the
+    // manage-funds preview. Only honour this when the caller is an admin.
+    $fetchUserId = $user['id'];
+    if (!empty($_GET['_uid']) && !empty($_SESSION['admin_id'])) {
+        $fetchUserId = (int) $_GET['_uid'];
+    }
+
     $stmt = db()->prepare('SELECT asset_symbol, asset_name, crypto_amount, demo_usd_amount FROM asset_balances WHERE user_id = ?');
-    $stmt->execute([$user['id']]);
+    $stmt->execute([$fetchUserId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $map  = [];
     foreach ($rows as $r) {

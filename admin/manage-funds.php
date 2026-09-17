@@ -4,6 +4,26 @@ require_admin();
 require_once __DIR__ . '/../includes/wallet.php';
 require_once __DIR__ . '/../includes/mailer.php';
 
+ensure_asset_balances_table();
+
+/**
+ * Full coin list for admin — all 25 coins the platform supports.
+ * Mirrors crypto-assets.php so admin can set any coin's balance.
+ */
+function admin_all_assets(): array {
+    return [
+        'XRP'  => 'XRP',           'BTC'  => 'Bitcoin',        'ETH'  => 'Ethereum',
+        'USDT' => 'Tether USD',    'BNB'  => 'BNB',            'USDC' => 'USDC',
+        'SOL'  => 'Solana',        'TRX'  => 'Tron',           'DOGE' => 'Dogecoin',
+        'LTC'  => 'Litecoin',      'XLM'  => 'Stellar',        'AVAX' => 'Avalanche',
+        'MATIC'=> 'Polygon',       'DOT'  => 'Polkadot',       'ADA'  => 'Cardano',
+        'LINK' => 'Chainlink',     'UNI'  => 'Uniswap',        'ATOM' => 'Cosmos',
+        'NEAR' => 'NEAR Protocol', 'ICP'  => 'Internet Computer',
+        'VET'  => 'VeChain',       'FIL'  => 'Filecoin',       'ALGO' => 'Algorand',
+        'FTM'  => 'Fantom',        'XTZ'  => 'Tezos',
+    ];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
     $userId    = (int) ($_POST['user_id'] ?? 0);
     $asset     = strtoupper(trim($_POST['asset'] ?? 'BTC'));
@@ -12,7 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
     $coinPrice = (float) ($_POST['coin_price']   ?? 0);
     $note      = trim($_POST['note'] ?? '');
 
-    if (!in_array($asset, wallet_supported_assets(), true)) $asset = 'BTC';
+    $allAdminAssets = admin_all_assets();
+    if (!isset($allAdminAssets[$asset])) $asset = 'BTC';
 
     $stmt = db()->prepare('SELECT * FROM users WHERE id = ?');
     $stmt->execute([$userId]);
@@ -96,8 +117,8 @@ require __DIR__ . '/includes/header.php';
     <div class="adm-field">
       <label>Select Coin <span class="req">*</span></label>
       <select name="asset" id="assetSelect">
-        <?php foreach (wallet_supported_assets() as $a): ?>
-          <option value="<?= e($a) ?>"><?= e(asset_label($a)) ?> (<?= e($a) ?>)</option>
+        <?php foreach (admin_all_assets() as $sym => $lbl): ?>
+          <option value="<?= e($sym) ?>"><?= e($lbl) ?> (<?= e($sym) ?>)</option>
         <?php endforeach; ?>
       </select>
     </div>
