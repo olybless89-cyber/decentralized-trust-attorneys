@@ -16,7 +16,12 @@ $initials = strtoupper(substr(trim($user['full_name']), 0, 1) . (strpos(trim($us
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="stylesheet" href="assets/css/page-loader.css">
 </head>
-<body>
+<body<?php
+  $__bodyClasses = [];
+  if (basename($_SERVER['SCRIPT_NAME']) === 'crypto-assets.php') $__bodyClasses[] = 'ca-page';
+  echo $__bodyClasses ? ' class="' . implode(' ', $__bodyClasses) . '"' : '';
+?>>
+
 <div class="admin-shell dash-shell">
   <aside class="admin-side dash-side">
     <div class="brand"><span class="mark">&#9878;</span> Decentralized Trust</div>

@@ -193,6 +193,12 @@ img { max-width: 100%; display: block; }
 .admin-side nav a.active { background: var(--gold); color: #1a1203; font-weight: 700; }
 .admin-main { flex: 1; background: var(--cream); padding: 32px 36px; min-width: 0; }
 .admin-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+
+/* Dark override for Crypto Assets page */
+body.ca-page .admin-main { background: #0f172a; }
+body.ca-page .admin-topbar h2 { color: #f1f5f9; }
+body.ca-page .admin-topbar { color: #94a3b8; }
+body.ca-page .admin-topbar strong { color: #e2e8f0 !important; }
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; margin-bottom: 20px; }
 .kpi-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
 .kpi-icon { width: 34px; height: 34px; border-radius: 8px; background: #eef2f7; display: flex; align-items: center; justify-content: center; font-size: 15px; margin-bottom: 10px; }
@@ -379,63 +385,72 @@ img { max-width: 100%; display: block; }
 .wallet-modal-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
 .wallet-modal-head .wallet-logo { box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 8px 20px -8px rgba(15,23,42,.4); }
 
-/* ── Crypto Assets portfolio page ── */
-.ca-portfolio-header {
-  background: linear-gradient(160deg, var(--navy-dark) 0%, #0d1f3c 100%);
-  border-radius: var(--radius); padding: 28px 28px 24px; margin-bottom: 6px;
-  color: #fff;
-}
-.ca-portfolio-title {
-  display: flex; align-items: center; gap: 8px; font-size: 13px;
-  color: #94a3b8; margin-bottom: 10px;
-}
-.ca-portfolio-name-btn {
-  background: none; border: none; color: #e2e8f0; font-size: 13px; font-weight: 700;
-  cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; font-family: inherit;
-}
-.ca-portfolio-name-btn:hover { color: var(--gold); }
-.ca-chevron { font-size: 16px; color: #94a3b8; }
-.ca-portfolio-total {
-  font-family: 'Playfair Display', serif; font-size: 32px; color: var(--gold);
-  font-weight: 700; margin-bottom: 4px;
-}
-.ca-portfolio-sub { font-size: 12px; color: #64748b; }
+/* ── Crypto Assets portfolio page — dark CryptoRepublic style ── */
 
+/* Top action bar: Buy / Receive / Send / Sell */
+.ca-action-bar {
+  display: flex; gap: 10px; margin-bottom: 18px; overflow-x: auto;
+  padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+}
+.ca-action-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border-radius: 999px; font-size: 14px; font-weight: 600;
+  text-decoration: none; white-space: nowrap; flex-shrink: 0;
+  transition: opacity .15s, transform .1s;
+}
+.ca-action-btn:active { opacity: .8; transform: scale(.97); }
+.ca-action-icon { font-size: 16px; line-height: 1; }
+.ca-action-buy     { background: #7c3aed; color: #fff; }
+.ca-action-receive { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+.ca-action-send    { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+.ca-action-sell    { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+
+/* Asset list wrapper */
 .ca-asset-list {
-  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
-  overflow: hidden; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 10px;
 }
-.ca-asset-row {
+
+/* Each coin card — dark pill */
+a.ca-asset-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid var(--line); transition: background .12s ease;
+  background: #1a2235; border: 1px solid #283148; border-radius: 18px;
+  padding: 14px 18px; text-decoration: none; color: inherit;
+  transition: background .13s, transform .1s;
 }
-.ca-asset-row:last-child { border-bottom: none; }
-.ca-asset-row:hover { background: #f8fafc; }
+a.ca-asset-row:hover  { background: #1f2b40; }
+a.ca-asset-row:active { transform: scale(.99); }
 
-.ca-asset-left { display: flex; align-items: center; gap: 14px; }
-.ca-asset-icon {
-  width: 44px; height: 44px; border-radius: 999px; overflow: hidden; flex-shrink: 0;
-  background: #eef2f7; display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--line);
+/* Left side */
+.ca-asset-left  { display: flex; align-items: center; gap: 13px; flex: 1; min-width: 0; }
+.ca-asset-icon  {
+  width: 46px; height: 46px; border-radius: 999px; overflow: hidden; flex-shrink: 0;
+  background: #0f172a; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid #2d3f5e;
 }
-.ca-asset-icon img { width: 44px; height: 44px; object-fit: cover; }
+.ca-asset-icon img { width: 46px; height: 46px; object-fit: cover; }
 .ca-asset-icon-fallback {
-  width: 44px; height: 44px; border-radius: 999px; background: var(--navy);
-  color: #fff; font-weight: 800; font-size: 13px;
-  align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 999px; background: #0f172a;
+  color: #94a3b8; font-weight: 800; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
 }
-.ca-asset-name { font-size: 15px; font-weight: 700; color: var(--ink); }
-.ca-asset-sub  { font-size: 11.5px; color: #94a3b8; margin-top: 2px; }
+.ca-asset-info  { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ca-asset-name  { font-size: 15px; font-weight: 700; color: #f1f5f9; white-space: nowrap; }
+.ca-asset-sub   { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
+.ca-price       { color: #94a3b8; }
+.ca-change-up   { color: #4ade80; font-weight: 600; }
+.ca-change-down { color: #f87171; font-weight: 600; }
 
-.ca-asset-right { text-align: right; }
-.ca-asset-balance { font-size: 15px; font-weight: 700; color: var(--ink); }
-.ca-asset-ticker  { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+/* Right side */
+.ca-asset-right     { text-align: right; flex-shrink: 0; margin-left: 10px; }
+.ca-asset-coinamt   { font-size: 14px; font-weight: 700; color: #f1f5f9; }
+.ca-asset-usd       { font-size: 13px; color: #64748b; margin-top: 3px; font-weight: 500; }
 
 @media (max-width: 500px) {
-  .ca-asset-row { padding: 13px 14px; }
-  .ca-asset-icon { width: 38px; height: 38px; }
-  .ca-asset-icon img { width: 38px; height: 38px; }
-  .ca-portfolio-total { font-size: 26px; }
+  .ca-asset-row   { padding: 12px 14px; border-radius: 16px; }
+  .ca-asset-icon  { width: 40px; height: 40px; }
+  .ca-asset-icon img { width: 40px; height: 40px; }
+  .ca-asset-name  { font-size: 14px; }
+  .ca-action-btn  { padding: 9px 15px; font-size: 13px; }
 }
 
 /* ── Coin Detail page ── */
@@ -511,15 +526,7 @@ img { max-width: 100%; display: block; }
 .cd-swap     { background: #fef3c7; color: #92400e; }
 .cd-withdraw { background: #fee2e2; color: #b91c1c; }
 
-/* Clickable asset rows */
-a.ca-asset-row {
-  text-decoration: none; color: inherit;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid var(--line); transition: background .12s ease;
-}
-a.ca-asset-row:last-child { border-bottom: none; }
-a.ca-asset-row:hover { background: #f1f5f9; }
-.ca-row-chevron { font-size: 20px; color: #cbd5e1; margin-left: 8px; flex-shrink: 0; }
+/* (ca-asset-row now defined in the Crypto Assets section above) */
 
 @media (max-width: 500px) {
   .cd-actions { grid-template-columns: repeat(4,1fr); gap: 8px; }
