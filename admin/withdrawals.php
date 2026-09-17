@@ -14,7 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
         db()->beginTransaction();
         try {
             if ($decision === 'approved') {
-                // Verify sufficient balance at approval time, then debit it.
                 $stmt = db()->prepare('SELECT balance FROM users WHERE id = ? FOR UPDATE');
                 $stmt->execute([$wd['user_id']]);
                 $bal = (float) $stmt->fetch()['balance'];
@@ -45,66 +44,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
     exit;
 }
 
-$filter = $_GET['status'] ?? 'pending';
-$validStatuses = ['pending', 'approved', 'declined'];
-if (in_array($filter, $validStatuses, true)) {
-    $stmt = db()->prepare('SELECT w.*, u.full_name, u.email, u.balance FROM withdrawals w JOIN users u ON u.id = w.user_id WHERE w.status = ? ORDER BY w.created_at DESC');
-    $stmt->execute([$filter]);
-} else {
-    $stmt = db()->query('SELECT w.*, u.full_name, u.email, u.balance FROM withdrawals w JOIN users u ON u.id = w.user_id ORDER BY w.created_at DESC');
-}
-$withdrawals = $stmt->fetchAll();
+$withdrawals = db()->query("SELECT w.*, u.full_name, u.email, u.balance FROM withdrawals w JOIN users u ON u.id = w.user_id ORDER BY w.created_at DESC")->fetchAll();
+$statusLabels = ['pending' => 'Pending', 'approved' => 'Approved', 'declined' => 'Rejected'];
 
-$pageTitle = 'Withdrawals';
+$pageTitle = 'Withdrawal Requests';
 require __DIR__ . '/includes/header.php';
 ?>
-<div class="filters">
-  <a href="?status=pending" class="<?= $filter === 'pending' ? 'active' : '' ?>">Pending</a>
-  <a href="?status=approved" class="<?= $filter === 'approved' ? 'active' : '' ?>">Approved</a>
-  <a href="?status=declined" class="<?= $filter === 'declined' ? 'active' : '' ?>">Declined</a>
-  <a href="?status=all" class="<?= $filter === 'all' ? 'active' : '' ?>">All</a>
+<div class="adm-toolbar">
+  <select class="adm-select" data-adm-table-filter="#wdTable">
+    <option value="all">All Requests</option>
+    <?php foreach ($statusLabels as $val => $label): ?>
+      <option value="<?= e($val) ?>"><?= e($label) ?></option>
+    <?php endforeach; ?>
+  </select>
+  <div class="adm-search"><input type="text" placeholder="Search by user name, email..." data-adm-table-search="#wdTable"></div>
 </div>
 
-<div class="panel">
-  <?php if (!$withdrawals): ?>
-    <p style="color:var(--muted)">No withdrawal requests found for this filter.</p>
-  <?php else: ?>
-    <div class="table-wrap">
-    <table class="table">
-      <thead><tr><th>User</th><th>Amount</th><th>Method</th><th>Destination</th><th>User Balance</th><th>Status</th><th>Requested</th><th></th></tr></thead>
-      <tbody>
-        <?php foreach ($withdrawals as $w): ?>
-        <tr>
-          <td><strong><?= e($w['full_name']) ?></strong><br><span style="color:var(--muted);font-size:12.5px"><?= e($w['email']) ?></span></td>
-          <td><strong><?= fmt_money((float) $w['amount']) ?></strong></td>
-          <td><?= e(ucfirst($w['method'])) ?></td>
-          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= e($w['wallet_address']) ?></td>
-          <td><?= fmt_money((float) $w['balance']) ?></td>
-          <td><?= wd_status_badge($w['status']) ?></td>
-          <td><?= e(date('M j, Y', strtotime($w['created_at']))) ?></td>
-          <td>
-            <?php if ($w['status'] === 'pending'): ?>
-              <form method="post" style="display:inline">
-                <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="id" value="<?= (int) $w['id'] ?>">
-                <input type="hidden" name="decision" value="approved">
-                <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Approve this withdrawal and debit the user balance?')">Approve</button>
-              </form>
-              <form method="post" style="display:inline">
-                <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="id" value="<?= (int) $w['id'] ?>">
-                <input type="hidden" name="decision" value="declined">
-                <button type="submit" class="btn btn-outline btn-sm" onclick="return confirm('Decline this withdrawal request?')">Decline</button>
-              </form>
-            <?php else: ?>
-              &mdash;
-            <?php endif; ?>
-          </td>
-        </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-    </div>
-  <?php endif; ?>
+<div class="adm-panel">
+  <div class="adm-table-wrap">
+  <table class="adm-table" id="wdTable">
+    <thead><tr><th>User Name</th><th>Email</th><th>Amount</th><th>Coin</th><th>Wallet Address</th><th>Date</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      <?php foreach ($withdrawals as $w): ?>
+      <tr data-status="<?= e($w['status']) ?>" data-search="<?= e(strtolower($w['full_name'] . ' ' . $w['email'])) ?>">
+        <td><strong><?= e($w['full_name']) ?></strong></td>
+        <td><?= e($w['email']) ?></td>
+        <td><strong><?= fmt_money((float) $w['amount']) ?></strong></td>
+        <td><?= e($w['asset'] ?? 'BTC') ?></td>
+        <td class="adm-mono" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= e($w['wallet_address']) ?></td>
+        <td><?= e(date('n/j/Y', strtotime($w['created_at']))) ?></td>
+        <td><?= badge_for_status($w['status'], $statusLabels) ?></td>
+        <td style="white-space:nowrap">
+          <?php if ($w['status'] === 'pending'): ?>
+            <form method="post" style="display:inline">
+              <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+              <input type="hidden" name="id" value="<?= (int) $w['id'] ?>">
+              <input type="hidden" name="decision" value="approved">
+              <button type="submit" class="adm-btn adm-btn-primary adm-btn-sm" onclick="return confirm('Approve this withdrawal and debit the user balance?')">Approve</button>
+            </form>
+            <form method="post" style="display:inline">
+              <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+              <input type="hidden" name="id" value="<?= (int) $w['id'] ?>">
+              <input type="hidden" name="decision" value="declined">
+              <button type="submit" class="adm-btn adm-btn-outline adm-btn-sm" onclick="return confirm('Decline this withdrawal request?')">Reject</button>
+            </form>
+          <?php else: ?>
+            <span style="color:var(--adm-muted-2);font-size:13px">No actions</span>
+          <?php endif; ?>
+        </td>
+      </tr>
+      <?php endforeach; ?>
+      <tr class="adm-js-empty-row"<?= $withdrawals ? ' style="display:none"' : '' ?>><td colspan="8" class="adm-empty">No withdrawal requests found.</td></tr>
+    </tbody>
+  </table>
+  </div>
 </div>
 <?php require __DIR__ . '/includes/footer.php'; ?>

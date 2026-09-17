@@ -8,6 +8,18 @@ function wallet_supported_assets(): array {
     return ['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP'];
 }
 
+/** Full display name for an asset ticker, e.g. BTC -> Bitcoin. */
+function asset_label(string $ticker): string {
+    $map = ['BTC' => 'Bitcoin', 'ETH' => 'Ethereum', 'USDT' => 'Tether', 'BNB' => 'BNB', 'SOL' => 'Solana', 'XRP' => 'Ripple'];
+    return $map[$ticker] ?? $ticker;
+}
+
+/** Logs a wallet-connection event (link-wallet page, or admin-side linking). */
+function log_wallet_connection(int $userId, string $address, string $method = 'manual', string $status = 'success'): void {
+    $stmt = db()->prepare('INSERT INTO wallet_connections (user_id, address, method, status) VALUES (?,?,?,?)');
+    $stmt->execute([$userId, $address, $method, $status]);
+}
+
 /** Returns the user's demo receive address, generating and saving one on first use. */
 function get_or_create_wallet_address(array $user): string {
     if (!empty($user['wallet_address'])) {

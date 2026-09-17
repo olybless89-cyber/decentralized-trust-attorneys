@@ -120,3 +120,17 @@ function wd_status_badge(string $status): string {
 function fmt_money(float $n): string {
     return '$' . number_format($n, 2);
 }
+
+/**
+ * Generic status pill for the redesigned admin panel — maps a raw status
+ * value to a human label and a color, using the shared .adm-badge classes.
+ */
+function badge_for_status(string $status, array $labels = []): string {
+    $tone = [
+        'pending' => 'amber', 'in_review' => 'blue',
+        'approved' => 'green', 'declined' => 'red', 'rejected' => 'red',
+        'success' => 'green', 'completed' => 'green', 'failed' => 'red',
+    ][$status] ?? 'gray';
+    $label = $labels[$status] ?? ucfirst(str_replace('_', ' ', $status));
+    return '<span class="adm-badge adm-badge-' . $tone . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>';
+}

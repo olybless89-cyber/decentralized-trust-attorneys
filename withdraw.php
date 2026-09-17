@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/includes/mailer.php';
+require_once __DIR__ . '/includes/wallet.php';
 $user = require_login();
 
 $wdErrors = [];
@@ -9,8 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wdErrors[] = 'Your session expired, please try again.';
     } else {
         $amount = (float) ($_POST['amount'] ?? 0);
+        $asset = $_POST['asset'] ?? 'BTC';
         $wallet = trim($_POST['wallet_address'] ?? '');
         $method = trim($_POST['method'] ?? 'crypto');
+        if (!in_array($asset, wallet_supported_assets(), true)) {
+            $asset = 'BTC';
+        }
         if ($amount <= 0) {
             $wdErrors[] = 'Enter a valid withdrawal amount.';
         } elseif ($amount > (float) $user['balance']) {
@@ -18,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($wallet === '') {
             $wdErrors[] = 'Please provide a destination wallet address or payout detail.';
         } else {
-            $stmt = db()->prepare('INSERT INTO withdrawals (user_id, amount, method, wallet_address) VALUES (?,?,?,?)');
-            $stmt->execute([$user['id'], $amount, $method, $wallet]);
+            $stmt = db()->prepare('INSERT INTO withdrawals (user_id, amount, asset, method, wallet_address) VALUES (?,?,?,?,?)');
+            $stmt->execute([$user['id'], $amount, $asset, $method, $wallet]);
             send_email($user['email'], $user['full_name'], 'Withdrawal Request Received',
                 '<p>Hi ' . e($user['full_name']) . ',</p><p>We\'ve received your withdrawal request for <strong>' . fmt_money($amount) . '</strong> via ' . e(ucfirst($method)) . '.</p><p>Our team will review it and you\'ll get another email once it\'s approved or declined.</p>');
             flash_set('Withdrawal request submitted. An admin will review it shortly.');
@@ -46,6 +51,11 @@ require __DIR__ . '/includes/dash_header.php';
     <form method="post">
       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
       <div class="field"><label>Amount (USD)</label><input type="number" step="0.01" min="0.01" max="<?= e($user['balance']) ?>" name="amount" required></div>
+      <div class="field"><label>Coin</label>
+        <select name="asset">
+          <?php foreach (wallet_supported_assets() as $a): ?><option value="<?= e($a) ?>"><?= e(asset_label($a)) ?> (<?= e($a) ?>)</option><?php endforeach; ?>
+        </select>
+      </div>
       <div class="field"><label>Method</label>
         <select name="method">
           <option value="crypto">Crypto Wallet</option>
@@ -68,7 +78,7 @@ require __DIR__ . '/includes/dash_header.php';
       <?php foreach ($withdrawals as $w): ?>
         <div class="review-row">
           <div>
-            <div class="v"><?= fmt_money((float) $w['amount']) ?></div>
+            <div class="v"><?= fmt_money((float) $w['amount']) ?> <span style="font-weight:500;color:var(--muted)"><?= e($w['asset'] ?? 'BTC') ?></span></div>
             <div class="k" style="margin-top:2px"><?= e(ucfirst($w['method'])) ?> &middot; <?= e(date('M j, Y', strtotime($w['created_at']))) ?></div>
           </div>
           <?= wd_status_badge($w['status']) ?>

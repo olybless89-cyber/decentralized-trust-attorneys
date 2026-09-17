@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/includes/mailer.php';
+require_once __DIR__ . '/includes/wallet.php';
 $user = require_login();
 
 $errors = [];
@@ -14,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $stmt = db()->prepare('UPDATE users SET linked_wallet_address = ? WHERE id = ?');
             $stmt->execute([$addr, $user['id']]);
+            log_wallet_connection($user['id'], $addr, 'manual', 'success');
             send_email($user['email'], $user['full_name'], 'Wallet Linked to Your Account',
                 '<p>Hi ' . e($user['full_name']) . ',</p><p>A wallet address has been linked to your account for withdrawals:</p><p><code>' . e($addr) . '</code></p><p>If this wasn\'t you, contact support immediately at ' . e(SUPPORT_EMAIL) . '.</p>');
             flash_set('Wallet linked. It will be pre-filled on your withdrawal requests.');
