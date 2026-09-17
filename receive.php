@@ -3,7 +3,8 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/includes/wallet.php';
 $user = require_login();
 
-$asset = $_GET['asset'] ?? 'BTC';
+// Pre-fill asset from coin-detail.php or direct link
+$asset = strtoupper(trim($_GET['asset'] ?? 'BTC'));
 if (!in_array($asset, wallet_supported_assets(), true)) $asset = 'BTC';
 $address = get_or_create_wallet_address($user, $asset);
 $network = wallet_network_labels()[$asset] ?? null;
@@ -31,7 +32,7 @@ require __DIR__ . '/includes/dash_header.php';
 
   <div class="address-box">
     <span id="walletAddr"><?= e($address) ?></span>
-    <button type="button" class="btn btn-outline btn-sm" onclick="copyAddr()">Copy</button>
+    <button type="button" class="btn btn-outline btn-sm" onclick="copyAddr(event)">Copy</button>
   </div>
   <?php if ($network): ?>
     <p class="hint" style="text-align:center;margin-top:8px"><strong>Network:</strong> <?= e($network) ?></p>
@@ -43,10 +44,11 @@ require __DIR__ . '/includes/dash_header.php';
 </div>
 
 <script>
-function copyAddr() {
+// Bug fix: accept event explicitly instead of relying on implicit global `event`.
+function copyAddr(ev) {
   const text = document.getElementById('walletAddr').innerText;
   navigator.clipboard.writeText(text).then(() => {
-    const btn = event.target;
+    const btn = ev.target;
     const old = btn.innerText;
     btn.innerText = 'Copied!';
     setTimeout(() => btn.innerText = old, 1500);
