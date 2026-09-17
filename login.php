@@ -34,11 +34,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hash = password_hash($password, PASSWORD_BCRYPT);
                 $stmt = db()->prepare('INSERT INTO users (full_name, email, password_hash, phone) VALUES (?, ?, ?, ?)');
                 $stmt->execute([$full_name, $email, $hash, $phone]);
-                $_SESSION['user_id'] = (int) db()->lastInsertId();
+                // Deliberately not auto-logging in here — the user confirms
+                // their new password once by logging in with it themselves.
                 send_email($email, $full_name, 'Welcome to ' . SITE_NAME,
                     '<p>Hi ' . e($full_name) . ',</p><p>Your account has been created. You can log in any time at <a href="' . e(SITE_URL) . '/login.php">' . e(SITE_URL) . '/login.php</a> to start a business formation application and manage your account.</p>');
-                flash_set('Welcome, ' . $full_name . '! Your account has been created.');
-                header('Location: ' . $next);
+                flash_set('Registration successful! Please log in with your details below.');
+                header('Location: login.php?mode=login&next=' . urlencode($next));
                 exit;
             }
         }
@@ -79,7 +80,7 @@ require __DIR__ . '/includes/header.php';
     <?php endforeach; ?>
 
     <?php if ($mode === 'signup'): ?>
-      <form method="post">
+      <form method="post" data-loader-label="Submitting your registration&hellip;">
         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="action" value="signup">
         <div class="field"><label>Full Name</label><input type="text" name="full_name" placeholder="Jane Doe" required value="<?= e($_POST['full_name'] ?? '') ?>"></div>
@@ -89,7 +90,7 @@ require __DIR__ . '/includes/header.php';
         <button class="btn btn-primary btn-block" type="submit">Create Account</button>
       </form>
     <?php else: ?>
-      <form method="post">
+      <form method="post" data-loader-label="Signing you in&hellip;">
         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="action" value="login">
         <div class="field"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required value="<?= e($_POST['email'] ?? '') ?>"></div>
@@ -98,7 +99,7 @@ require __DIR__ . '/includes/header.php';
       </form>
     <?php endif; ?>
 
-    <div class="help-link">Need assistance? <a href="application.php">Start a new business application</a></div>
+    <div class="help-link">Need assistance? <a href="application.php" data-loader-label="Loading your application&hellip;">Start a new business application</a></div>
   </div>
 </div>
 <?php require __DIR__ . '/includes/footer.php'; ?>

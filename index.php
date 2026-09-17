@@ -9,7 +9,7 @@ require __DIR__ . '/includes/header.php';
     <h1>Establish Your Business With<br><span class="accent">Decentralized Trust Attorneys</span></h1>
     <p class="lead">Secure your assets, minimize your tax burden, and ensure absolute privacy with the nation's premier jurisdiction for corporate formation. Expertly guided, fully compliant.</p>
     <div class="hero-actions">
-      <a href="application.php" class="btn btn-gold">Start Your Formation &rarr;</a>
+      <a href="application.php" class="btn btn-gold" data-loader-label="Loading your application&hellip;">Start Your Formation &rarr;</a>
       <a href="#packages" class="btn btn-outline" style="border-color:#334155;color:#fff">Learn More</a>
     </div>
     <div class="stat-row">
@@ -31,25 +31,25 @@ require __DIR__ . '/includes/header.php';
         <div class="icon-badge">&#128737;</div>
         <h3>Limited Liability Company (LLC)</h3>
         <p>Flexible business structure with simplified management and tax benefits. Perfect for small to medium businesses.</p>
-        <a href="application.php?type=LLC" class="btn btn-outline btn-sm">Select LLC</a>
+        <a href="application.php?type=LLC" class="btn btn-outline btn-sm" data-loader-label="Loading your application&hellip;">Select LLC</a>
       </div>
       <div class="card">
         <div class="icon-badge">&#128196;</div>
         <h3>Corporation (C-CORP)</h3>
         <p>Traditional business structure ideal for raising capital, going public, and scaling operations globally.</p>
-        <a href="application.php?type=CCORP" class="btn btn-outline btn-sm">Select C-Corp</a>
+        <a href="application.php?type=CCORP" class="btn btn-outline btn-sm" data-loader-label="Loading your application&hellip;">Select C-Corp</a>
       </div>
       <div class="card">
         <div class="icon-badge">&#128274;</div>
         <h3>Close LLC</h3>
         <p>Unique to Decentralized Trust and provides the same asset protection, tax and privacy benefits as a regular LLC &mdash; ideal for family or single-owner businesses with reduced requirements.</p>
-        <a href="application.php?type=CLOSE_LLC" class="btn btn-outline btn-sm">Select Close LLC</a>
+        <a href="application.php?type=CLOSE_LLC" class="btn btn-outline btn-sm" data-loader-label="Loading your application&hellip;">Select Close LLC</a>
       </div>
       <div class="card">
         <div class="icon-badge">&#9202;</div>
         <h3>Close Corporation</h3>
         <p>Same asset protection, privacy, and tax features as a Corporation, but with less maintenance. Ideal for tightly held businesses.</p>
-        <a href="application.php?type=CLOSE_CORP" class="btn btn-outline btn-sm">Select Close Corp</a>
+        <a href="application.php?type=CLOSE_CORP" class="btn btn-outline btn-sm" data-loader-label="Loading your application&hellip;">Select Close Corp</a>
       </div>
     </div>
   </div>

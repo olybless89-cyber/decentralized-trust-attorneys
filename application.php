@@ -110,7 +110,7 @@ require __DIR__ . '/includes/header.php';
       <div class="alert alert-error" style="max-width:680px;margin:0 auto 18px"><?= e($err) ?></div>
     <?php endforeach; ?>
 
-    <form method="post" enctype="multipart/form-data" id="appForm">
+    <form method="post" enctype="multipart/form-data" id="appForm" data-loader-label="Submitting your application&hellip;">
       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
       <div class="form-card" style="max-width:680px">
 
