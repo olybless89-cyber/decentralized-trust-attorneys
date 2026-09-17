@@ -32,11 +32,11 @@
         if (!d) return '';
         const change = d.usd_24h_change || 0;
         const up = change >= 0;
-        return `<div class="ticker-item">
+        return `<a class="ticker-item" href="receive.php?asset=${c.symbol}" data-loader-label="Loading ${c.symbol}&hellip;">
           <span class="ticker-sym">${c.symbol}</span>
           <span class="ticker-price">${fmtPrice(d.usd)}</span>
           <span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(change).toFixed(2)}%</span>
-        </div>`;
+        </a>`;
       }).join('');
     } catch (e) {
       el.innerHTML = '<div class="ticker-item" style="color:var(--muted)">Live prices unavailable right now.</div>';

@@ -40,17 +40,9 @@ $withdrawals = $stmt->fetchAll();
 
 $pageTitle = 'Withdraw';
 require __DIR__ . '/includes/dash_header.php';
-// Pre-fill asset from coin-detail.php
-$preAsset = strtoupper(trim($_GET['asset'] ?? 'BTC'));
-if (!in_array($preAsset, wallet_supported_assets(), true)) $preAsset = 'BTC';
 ?>
 <div class="grid grid-2" style="align-items:start">
   <div class="panel">
-    <?php if (!empty($_GET['asset'])): ?>
-      <div style="margin-bottom:16px">
-        <a href="coin-detail.php?coin=<?= urlencode($preAsset) ?>" class="cd-back-btn">&#8592; <?= e($preAsset) ?></a>
-      </div>
-    <?php endif; ?>
     <h3 style="margin-bottom:16px">Request a Withdrawal</h3>
     <p style="font-size:14px;margin-bottom:20px">Available balance: <strong style="color:var(--navy)"><?= fmt_money((float) $user['balance']) ?></strong></p>
     <?php foreach ($wdErrors as $err): ?>
@@ -61,7 +53,7 @@ if (!in_array($preAsset, wallet_supported_assets(), true)) $preAsset = 'BTC';
       <div class="field"><label>Amount (USD)</label><input type="number" step="0.01" min="0.01" max="<?= e($user['balance']) ?>" name="amount" required></div>
       <div class="field"><label>Coin</label>
         <select name="asset">
-          <?php foreach (wallet_supported_assets() as $a): ?><option value="<?= e($a) ?>" <?= $a === $preAsset ? 'selected' : '' ?>><?= e(asset_label($a)) ?> (<?= e($a) ?>)</option><?php endforeach; ?>
+          <?php foreach (wallet_supported_assets() as $a): ?><option value="<?= e($a) ?>"><?= e(asset_label($a)) ?> (<?= e($a) ?>)</option><?php endforeach; ?>
         </select>
       </div>
       <div class="field"><label>Method</label>

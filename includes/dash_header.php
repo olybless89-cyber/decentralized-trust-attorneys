@@ -16,12 +16,7 @@ $initials = strtoupper(substr(trim($user['full_name']), 0, 1) . (strpos(trim($us
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="stylesheet" href="assets/css/page-loader.css">
 </head>
-<body<?php
-  $__bodyClasses = [];
-  if (basename($_SERVER['SCRIPT_NAME']) === 'crypto-assets.php') $__bodyClasses[] = 'ca-page';
-  echo $__bodyClasses ? ' class="' . implode(' ', $__bodyClasses) . '"' : '';
-?>>
-
+<body>
 <div class="admin-shell dash-shell">
   <aside class="admin-side dash-side">
     <div class="brand"><span class="mark">&#9878;</span> Decentralized Trust</div>
@@ -41,7 +36,6 @@ $initials = strtoupper(substr(trim($user['full_name']), 0, 1) . (strpos(trim($us
       <a href="buy.php" class="<?= dnavclass('buy.php', $current) ?>">&#43; Buy</a>
       <a href="withdraw.php" class="<?= dnavclass('withdraw.php', $current) ?>">&#128176; Withdraw</a>
       <a href="link-wallet.php" class="<?= dnavclass('link-wallet.php', $current) ?>">&#128279; Link Wallet</a>
-      <a href="crypto-assets.php" class="<?= dnavclass('crypto-assets.php', $current) ?>">&#128181; Crypto Assets</a>
       <div class="nav-heading">Business Formation</div>
       <a href="application.php" class="<?= dnavclass('application.php', $current) ?>">&#128196; New Application</a>
       <a href="applications.php" class="<?= dnavclass('applications.php', $current) ?>">&#128194; My Applications</a>
@@ -53,7 +47,7 @@ $initials = strtoupper(substr(trim($user['full_name']), 0, 1) . (strpos(trim($us
 
   <nav class="mobile-tabbar">
     <a href="dashboard.php" class="<?= dnavclass('dashboard.php', $current) ?>"><span class="mt-icon">&#127968;</span>Dashboard</a>
-    <a href="crypto-assets.php" class="<?= dnavclass('crypto-assets.php', $current) ?>"><span class="mt-icon">&#128181;</span>Crypto Assets</a>
+    <a href="send.php" class="<?= dnavclass('send.php', $current) ?>"><span class="mt-icon">&#8593;</span>Send</a>
     <a href="link-wallet.php" class="<?= dnavclass('link-wallet.php', $current) ?>"><span class="mt-icon">&#128279;</span>Link Wallet</a>
     <a href="receive.php" class="<?= dnavclass('receive.php', $current) ?>"><span class="mt-icon">&#8595;</span>Receive</a>
     <a href="more.php" class="<?= dnavclass('more.php', $current) ?>"><span class="mt-icon">&#9776;</span>More</a>

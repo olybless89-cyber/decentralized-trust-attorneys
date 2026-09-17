@@ -96,9 +96,6 @@ require __DIR__ . '/includes/header.php';
         <div class="field"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required value="<?= e($_POST['email'] ?? '') ?>"></div>
         <div class="field"><label>Password</label><input type="password" name="password" placeholder="Enter your password" required></div>
         <button class="btn btn-primary btn-block" type="submit">Login</button>
-        <div style="text-align:center;margin-top:12px">
-          <a href="forgot-password.php" style="font-size:13px;color:var(--navy);font-weight:600">Forgot your password?</a>
-        </div>
       </form>
     <?php endif; ?>
 

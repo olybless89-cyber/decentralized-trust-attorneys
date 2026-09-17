@@ -25,9 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
                 }
                 $stmt = db()->prepare('UPDATE users SET balance = balance - ? WHERE id = ?');
                 $stmt->execute([$wd['amount'], $wd['user_id']]);
-                // Bug fix: log the withdrawal debit so it appears in the user tx ledger.
-                require_once __DIR__ . '/../includes/wallet.php';
-                log_transaction((int) $wd['user_id'], 'admin_debit', $wd['asset'] ?? 'BTC', (float) $wd['amount'], null, $wd['wallet_address'], 'Withdrawal approved');
             }
             $stmt = db()->prepare('UPDATE withdrawals SET status = ? WHERE id = ?');
             $stmt->execute([$decision, $id]);

@@ -193,12 +193,6 @@ img { max-width: 100%; display: block; }
 .admin-side nav a.active { background: var(--gold); color: #1a1203; font-weight: 700; }
 .admin-main { flex: 1; background: var(--cream); padding: 32px 36px; min-width: 0; }
 .admin-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
-
-/* Dark override for Crypto Assets page */
-body.ca-page .admin-main { background: #0f172a; }
-body.ca-page .admin-topbar h2 { color: #f1f5f9; }
-body.ca-page .admin-topbar { color: #94a3b8; }
-body.ca-page .admin-topbar strong { color: #e2e8f0 !important; }
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; margin-bottom: 20px; }
 .kpi-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
 .kpi-icon { width: 34px; height: 34px; border-radius: 8px; background: #eef2f7; display: flex; align-items: center; justify-content: center; font-size: 15px; margin-bottom: 10px; }
@@ -218,7 +212,12 @@ body.ca-page .admin-topbar strong { color: #e2e8f0 !important; }
   background: var(--navy-dark); border-radius: var(--radius); padding: 14px 18px;
   display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 24px;
 }
-.ticker-item { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #cbd5e1; }
+.ticker-item {
+  display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #cbd5e1;
+  text-decoration: none; cursor: pointer; padding: 6px 10px; margin: -6px -10px; border-radius: 8px;
+  transition: background .15s ease;
+}
+.ticker-item:hover { background: rgba(255,255,255,.08); }
 .ticker-sym { font-weight: 700; color: #fff; }
 .ticker-price { color: #e2e8f0; }
 .ticker-change.up { color: #4ade80; }
@@ -384,210 +383,3 @@ body.ca-page .admin-topbar strong { color: #e2e8f0 !important; }
 @keyframes walletModalIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
 .wallet-modal-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
 .wallet-modal-head .wallet-logo { box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 8px 20px -8px rgba(15,23,42,.4); }
-
-/* ── Crypto Assets portfolio page — dark CryptoRepublic style ── */
-
-/* Top action bar: Buy / Receive / Send / Sell */
-.ca-action-bar {
-  display: flex; gap: 10px; margin-bottom: 18px; overflow-x: auto;
-  padding-bottom: 2px; -webkit-overflow-scrolling: touch;
-}
-.ca-action-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 20px; border-radius: 999px; font-size: 14px; font-weight: 600;
-  text-decoration: none; white-space: nowrap; flex-shrink: 0;
-  transition: opacity .15s, transform .1s;
-}
-.ca-action-btn:active { opacity: .8; transform: scale(.97); }
-.ca-action-icon { font-size: 16px; line-height: 1; }
-.ca-action-buy     { background: #7c3aed; color: #fff; }
-.ca-action-receive { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
-.ca-action-send    { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
-.ca-action-sell    { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
-
-/* Asset list wrapper */
-.ca-asset-list {
-  display: flex; flex-direction: column; gap: 10px;
-}
-
-/* Each coin card — dark pill */
-a.ca-asset-row {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #1a2235; border: 1px solid #283148; border-radius: 18px;
-  padding: 14px 18px; text-decoration: none; color: inherit;
-  transition: background .13s, transform .1s;
-}
-a.ca-asset-row:hover  { background: #1f2b40; }
-a.ca-asset-row:active { transform: scale(.99); }
-
-/* Left side */
-.ca-asset-left  { display: flex; align-items: center; gap: 13px; flex: 1; min-width: 0; }
-.ca-asset-icon  {
-  width: 46px; height: 46px; border-radius: 999px; overflow: hidden; flex-shrink: 0;
-  background: #0f172a; display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid #2d3f5e;
-}
-.ca-asset-icon img { width: 46px; height: 46px; object-fit: cover; }
-.ca-asset-icon-fallback {
-  width: 46px; height: 46px; border-radius: 999px; background: #0f172a;
-  color: #94a3b8; font-weight: 800; font-size: 13px;
-  display: flex; align-items: center; justify-content: center;
-}
-.ca-asset-info  { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.ca-asset-name  { font-size: 15px; font-weight: 700; color: #f1f5f9; white-space: nowrap; }
-.ca-asset-sub   { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
-.ca-price       { color: #94a3b8; }
-.ca-change-up   { color: #4ade80; font-weight: 600; }
-.ca-change-down { color: #f87171; font-weight: 600; }
-
-/* Right side */
-.ca-asset-right     { text-align: right; flex-shrink: 0; margin-left: 10px; }
-.ca-asset-coinamt   { font-size: 14px; font-weight: 700; color: #f1f5f9; }
-.ca-asset-usd       { font-size: 13px; color: #64748b; margin-top: 3px; font-weight: 500; }
-
-@media (max-width: 500px) {
-  .ca-asset-row   { padding: 12px 14px; border-radius: 16px; }
-  .ca-asset-icon  { width: 40px; height: 40px; }
-  .ca-asset-icon img { width: 40px; height: 40px; }
-  .ca-asset-name  { font-size: 14px; }
-  .ca-action-btn  { padding: 9px 15px; font-size: 13px; }
-}
-
-/* ── Coin Detail page ── */
-.cd-back-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 14px; font-weight: 600; color: var(--navy);
-  padding: 6px 0; transition: color .12s;
-}
-.cd-back-btn:hover { color: var(--gold); }
-.cd-back-arrow { font-size: 18px; }
-
-.cd-hero {
-  background: linear-gradient(160deg, var(--navy-dark) 0%, #0d1f3c 100%);
-  border-radius: var(--radius); padding: 22px 24px;
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  margin-bottom: 14px; flex-wrap: wrap;
-}
-.cd-hero-left { display: flex; align-items: center; gap: 16px; }
-.cd-coin-icon {
-  width: 56px; height: 56px; border-radius: 999px; overflow: hidden; flex-shrink: 0;
-  background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center;
-  border: 2px solid rgba(255,255,255,.12);
-}
-.cd-coin-icon img { width: 56px; height: 56px; object-fit: cover; }
-.cd-coin-icon-fallback {
-  width: 56px; height: 56px; border-radius: 999px;
-  background: var(--gold); color: #1a1203;
-  font-weight: 800; font-size: 15px;
-  align-items: center; justify-content: center;
-}
-.cd-coin-name   { font-size: 20px; font-weight: 800; color: #fff; line-height: 1.2; }
-.cd-coin-ticker { font-size: 12.5px; color: #94a3b8; margin-top: 3px; }
-
-.cd-hero-right { text-align: right; }
-.cd-live-price {
-  font-family: 'Playfair Display', serif; font-size: 24px;
-  color: var(--gold); font-weight: 700;
-}
-.cd-price-change { font-size: 12.5px; font-weight: 700; margin-top: 4px; }
-.cd-price-change.up   { color: #4ade80; }
-.cd-price-change.down { color: #f87171; }
-
-.cd-balance-card {
-  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 20px 24px; margin-bottom: 18px; box-shadow: var(--shadow);
-}
-.cd-balance-label  { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
-.cd-balance-amount { font-family: 'Playfair Display', serif; font-size: 30px; color: var(--navy); font-weight: 700; }
-.cd-balance-sub    { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-
-/* 4-button action row */
-.cd-actions {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 4px;
-}
-.cd-action-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  background: #fff; border: 1px solid var(--line); border-radius: 14px;
-  padding: 18px 8px 14px; font-size: 13px; font-weight: 700; color: var(--ink);
-  box-shadow: var(--shadow); transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-}
-.cd-action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px -8px rgba(15,23,42,.22);
-  border-color: var(--navy);
-}
-.cd-action-icon {
-  width: 42px; height: 42px; border-radius: 999px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; font-weight: 900;
-}
-.cd-send     { background: #dbeafe; color: #1d4ed8; }
-.cd-receive  { background: #dcfce7; color: #15803d; }
-.cd-swap     { background: #fef3c7; color: #92400e; }
-.cd-withdraw { background: #fee2e2; color: #b91c1c; }
-
-/* (ca-asset-row now defined in the Crypto Assets section above) */
-
-@media (max-width: 500px) {
-  .cd-actions { grid-template-columns: repeat(4,1fr); gap: 8px; }
-  .cd-action-btn { padding: 14px 4px 10px; font-size: 11px; }
-  .cd-action-icon { width: 34px; height: 34px; font-size: 15px; }
-  .cd-live-price { font-size: 18px; }
-  .cd-hero { padding: 16px; }
-  .cd-coin-name { font-size: 17px; }
-}
-
-/* ── Add Demo Balance panel (coin-detail.php) ───────────────────────────────── */
-.cd-add-balance-panel {
-  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 22px 24px; margin-top: 18px; box-shadow: var(--shadow);
-}
-.cd-add-balance-title {
-  font-size: 15px; font-weight: 800; color: var(--navy); margin-bottom: 6px;
-}
-.cd-add-balance-sub {
-  font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.6;
-}
-.cd-add-balance-form { display: flex; flex-direction: column; gap: 10px; }
-.cd-input-group {
-  display: flex; align-items: center;
-  border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden;
-  background: #f8fafc; transition: border-color .2s;
-}
-.cd-input-group:focus-within { border-color: var(--navy); background: #fff; }
-.cd-input-prefix {
-  padding: 0 12px; font-size: 17px; font-weight: 700; color: var(--muted);
-  background: transparent; user-select: none;
-}
-.cd-usd-input {
-  flex: 1; border: none; outline: none; background: transparent;
-  padding: 13px 12px 13px 0; font-size: 16px; font-weight: 600; color: var(--navy);
-}
-.cd-calc-preview {
-  font-size: 13px; color: #6366f1; font-weight: 600; padding: 2px 0;
-}
-.cd-add-btn {
-  background: var(--navy); color: #fff; border: none; border-radius: 10px;
-  padding: 13px 20px; font-size: 14px; font-weight: 700; cursor: pointer;
-  transition: background .2s, transform .15s;
-}
-.cd-add-btn:hover:not(:disabled)  { background: #1e3a5f; transform: translateY(-1px); }
-.cd-add-btn:disabled { opacity: .6; cursor: not-allowed; }
-.cd-success-msg {
-  background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;
-  padding: 10px 14px; font-size: 13px; font-weight: 700; color: #15803d;
-  margin-bottom: 8px;
-}
-
-/* ── Portfolio total bar (crypto-assets.php) ────────────────────────────────── */
-.ca-portfolio-total-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-  border-radius: 14px; padding: 16px 20px; margin-bottom: 14px;
-}
-.ca-ptotal-label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; font-weight: 700; }
-.ca-ptotal-amt   { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--gold); font-weight: 700; }
-
-/* ── Asset rows with balance highlight ─────────────────────────────────────── */
-.ca-row-has-balance { border-left: 3px solid #4ade80; }
-.ca-has-bal         { color: #15803d !important; font-weight: 700 !important; }

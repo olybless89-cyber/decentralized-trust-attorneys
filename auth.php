@@ -1,12 +1,10 @@
 <?php
 require_once __DIR__ . '/db.php';
 
-function current_user(bool $fresh = false): ?array {
+function current_user(): ?array {
     if (empty($_SESSION['user_id'])) return null;
     static $cache = null;
-    // Bug fix: allow callers to bypass the static cache to get a live DB value
-    // (needed after any balance update within the same request).
-    if ($cache !== null && !$fresh) return $cache;
+    if ($cache !== null) return $cache;
     $stmt = db()->prepare('SELECT id, full_name, email, phone, street_address, city, country, state_region, ssn_last4, id_document_path, balance, wallet_address, linked_wallet_address, created_at FROM users WHERE id = ?');
     $stmt->execute([$_SESSION['user_id']]);
     $cache = $stmt->fetch() ?: null;

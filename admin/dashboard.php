@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../auth.php';
-$admin = require_admin(); // Bug fix: capture return value so $admin is available in the view.
+require_admin();
 require_once __DIR__ . '/../includes/wallet.php';
 
 $totalUsers = (int) db()->query('SELECT COUNT(*) c FROM users')->fetch()['c'];
