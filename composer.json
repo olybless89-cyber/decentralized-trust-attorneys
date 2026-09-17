@@ -1,0 +1,9 @@
+{
+    "name": "digitalweboracle/decentralized-trust-attorneys",
+    "description": "Decentralized Trust Attorneys demo — declares required PHP extensions so Railway's build always installs the MySQL PDO driver.",
+    "require": {
+        "php": ">=8.0",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*"
+    }
+}
