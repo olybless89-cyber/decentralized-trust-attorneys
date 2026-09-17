@@ -63,7 +63,8 @@ require __DIR__ . '/includes/dash_header.php';
     <div class="alert alert-info">No wallets linked yet. Pick a provider below, or link one manually.</div>
   <?php else: foreach ($linked as $w): ?>
     <div class="address-box" style="margin-bottom:12px">
-      <span class="avatar" style="background:<?= e(wallet_provider_color($w['provider'] ?: $w['address'])) ?>;flex-shrink:0"><?= e(wallet_provider_initials($w['provider'] ?: '??')) ?></span>
+      <?php [$g1, $g2] = wallet_provider_gradient($w['provider'] ?: $w['address']); ?>
+      <span class="wallet-logo sm" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($w['provider'] ?: '??')) ?></span>
       <div style="flex:1;min-width:0;margin-left:12px">
         <div style="font-weight:700;color:var(--navy);font-size:14px"><?= e($w['label'] ?: ($w['provider'] ?: 'Wallet')) ?></div>
         <div style="font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= e($w['address']) ?></div>
@@ -82,26 +83,33 @@ require __DIR__ . '/includes/dash_header.php';
   </div>
 
   <div class="provider-grid">
-    <?php foreach ($providers as $p): ?>
-      <div class="provider-card" data-provider="<?= e($p) ?>" onclick="openLinkModal('<?= e($p) ?>')">
-        <span class="avatar" style="background:<?= e(wallet_provider_color($p)) ?>"><?= e(wallet_provider_initials($p)) ?></span>
-        <span><?= e($p) ?></span>
+    <?php foreach ($providers as $p): [$g1, $g2] = wallet_provider_gradient($p); ?>
+      <div class="provider-card" data-provider="<?= e($p) ?>" data-g1="<?= e($g1) ?>" data-g2="<?= e($g2) ?>" onclick="openLinkModal('<?= e($p) ?>','<?= e($g1) ?>','<?= e($g2) ?>')">
+        <span class="wallet-logo" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($p)) ?></span>
+        <span class="wallet-name"><?= e($p) ?></span>
+        <span class="wallet-tag">Compatible</span>
       </div>
     <?php endforeach; ?>
-    <div class="provider-card" data-provider="" onclick="openLinkModal('')">
-      <span class="avatar" style="background:#64748b">&#43;</span>
-      <span>Other / Manual</span>
+    <div class="provider-card" data-provider="" data-g1="#64748b" data-g2="#334155" onclick="openLinkModal('','#64748b','#334155')">
+      <span class="wallet-logo" style="background:linear-gradient(135deg,#64748b,#334155)">&#43;</span>
+      <span class="wallet-name">Other / Manual</span>
+      <span class="wallet-tag">Any address</span>
     </div>
   </div>
 </div>
 
 <div id="linkModalOverlay" class="wallet-modal-overlay" style="display:none">
   <div class="wallet-modal">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <h3 id="linkModalTitle" style="margin:0">Link Wallet</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div class="wallet-modal-head">
+        <span id="linkModalLogo" class="wallet-logo">&#43;</span>
+        <div>
+          <h3 id="linkModalTitle" style="margin:0">Link Wallet</h3>
+          <p id="linkModalSub" style="margin:2px 0 0;font-size:12.5px;color:var(--muted)">Connect a public address</p>
+        </div>
+      </div>
       <button type="button" class="btn btn-outline btn-sm" onclick="closeLinkModal()">&#10005;</button>
     </div>
-    <p style="margin-bottom:18px">Save the wallet address you want your withdrawals sent to.</p>
     <form method="post">
       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
       <input type="hidden" name="provider" id="linkProvider" value="">
@@ -123,10 +131,19 @@ require __DIR__ . '/includes/dash_header.php';
 </div>
 
 <script>
-function openLinkModal(provider) {
+function walletInitials(name) {
+  if (!name) return '+';
+  var words = name.trim().split(/\s+/).slice(0, 2);
+  return words.map(function (w) { return w.charAt(0).toUpperCase(); }).join('') || '?';
+}
+function openLinkModal(provider, g1, g2) {
   document.getElementById('linkProvider').value = provider;
   document.getElementById('linkModalTitle').textContent = provider ? 'Link ' + provider : 'Link Wallet';
+  document.getElementById('linkModalSub').textContent = provider ? 'Connect your ' + provider + ' address' : 'Connect a public address';
   document.getElementById('linkWalletName').value = provider;
+  var logo = document.getElementById('linkModalLogo');
+  logo.textContent = walletInitials(provider);
+  logo.style.background = 'linear-gradient(135deg,' + (g1 || '#64748b') + ',' + (g2 || '#334155') + ')';
   document.getElementById('linkModalOverlay').style.display = 'flex';
 }
 function closeLinkModal() {

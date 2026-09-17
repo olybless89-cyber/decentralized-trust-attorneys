@@ -41,7 +41,42 @@ function wallet_provider_list(): array {
 
 /** Deterministic, tasteful background color for a provider's initial-letter badge. */
 function wallet_provider_color(string $name): string {
-    $palette = ['#0f172a', '#b45309', '#166534', '#7c3aed', '#0e7490', '#9d174d', '#1d4ed8', '#c2410c'];
+    return wallet_provider_gradient($name)[0];
+}
+
+/**
+ * Two-tone brand-flavored gradient [start, end] for a provider's badge.
+ * These are original color pairings (not copied artwork/logos) chosen to
+ * evoke each app's known brand palette so the picker reads as premium and
+ * the provider is easy to recognize at a glance.
+ */
+function wallet_provider_gradient(string $name): array {
+    $map = [
+        'MetaMask'               => ['#f6851b', '#c2560a'],
+        'Trust Wallet'           => ['#3375bb', '#0d1a3f'],
+        'Coinbase Wallet'        => ['#0052ff', '#00246b'],
+        'Exodus'                 => ['#7c3aed', '#2e1065'],
+        'Ledger Live'            => ['#2b2b2b', '#000000'],
+        'imToken'                => ['#11c4d1', '#0a5c66'],
+        'Rainbow'                => ['#ff6b9d', '#7c3aed'],
+        'SafePal'                => ['#2563eb', '#0b1e4d'],
+        'OKX Wallet'             => ['#1a1a1a', '#000000'],
+        'Binance Wallet'         => ['#f0b90b', '#8a6800'],
+        'Guarda'                 => ['#16a34a', '#064e26'],
+        'Atomic Wallet'          => ['#1eb0a6', '#0b4d47'],
+        'Coinomi'                => ['#3b82f6', '#1e3a8a'],
+        'BitPay'                 => ['#ff6600', '#8a2e00'],
+        'Zerion'                 => ['#2962ef', '#5b21b6'],
+        'MyEtherWallet'          => ['#1ba787', '#0b4d3e'],
+        'Gnosis Safe'            => ['#12ff80', '#008952'],
+        'Crypto.com DeFi Wallet' => ['#0b1e4d', '#022169'],
+        'Huobi Wallet'           => ['#2861f1', '#0b1e4d'],
+        'BitKeep'                => ['#5162f6', '#1a1a6b'],
+    ];
+    if (isset($map[$name])) {
+        return $map[$name];
+    }
+    $palette = [['#0f172a','#000000'], ['#b45309','#5c2b00'], ['#166534','#052e13'], ['#7c3aed','#2e1065'], ['#0e7490','#043c48'], ['#9d174d','#4a0621'], ['#1d4ed8','#0b1e63'], ['#c2410c','#5c1a05']];
     $i = crc32($name) % count($palette);
     return $palette[$i];
 }
