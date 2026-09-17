@@ -1,0 +1,69 @@
+/* ============================================================
+   Global page-transition loader.
+   Shown the instant a same-site link is clicked or a form is
+   submitted, and stays up until the new page finishes loading
+   (the browser navigation itself replaces the DOM, so there is
+   nothing to "hide" on success — only a bfcache restore or the
+   safety timeout below ever needs to hide it again).
+   ============================================================ */
+
+:root {
+  --loader-accent: #f59e0b; /* public site gold; admin overrides below */
+}
+body.adm-body {
+  --loader-accent: #e11d2a; /* admin red */
+}
+
+.page-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 17, 21, .35);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .15s ease;
+}
+.page-loader-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.page-loader-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  padding: 26px 34px;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+}
+
+.page-loader-spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 4px solid #e5e7eb;
+  border-top-color: var(--loader-accent);
+  animation: page-loader-spin .7s linear infinite;
+}
+
+.page-loader-label {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: .01em;
+}
+
+@keyframes page-loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-loader-spinner { animation-duration: 1.4s; }
+}

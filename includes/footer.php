@@ -34,5 +34,6 @@
     </div>
   </div>
 </footer>
+<script src="<?= $__base ?? '' ?>assets/js/page-loader.js"></script>
 </body>
 </html>

@@ -13,6 +13,7 @@ $__flash = flash_get();
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= $__base ?? '' ?>assets/css/style.css">
+<link rel="stylesheet" href="<?= $__base ?? '' ?>assets/css/page-loader.css">
 </head>
 <body>
 <header class="topnav">

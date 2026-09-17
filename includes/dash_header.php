@@ -14,6 +14,7 @@ $initials = strtoupper(substr(trim($user['full_name']), 0, 1) . (strpos(trim($us
 <title><?= isset($pageTitle) ? e($pageTitle) . ' | ' . e(SITE_NAME) : e(SITE_NAME) ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/page-loader.css">
 </head>
 <body>
 <div class="admin-shell dash-shell">

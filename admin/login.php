@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <title>Admin Login | <?= SITE_NAME ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/page-loader.css">
 <link rel="stylesheet" href="assets/admin.css">
 </head>
 <body class="adm-body adm">
@@ -48,5 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <a href="../index.php" class="back">&larr; Back to site</a>
   </div>
 </div>
+<script src="../assets/js/page-loader.js"></script>
 </body>
 </html>
