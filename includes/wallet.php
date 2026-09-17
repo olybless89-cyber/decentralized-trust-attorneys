@@ -81,6 +81,39 @@ function wallet_provider_gradient(string $name): array {
     return $palette[$i];
 }
 
+/**
+ * Returns the URL of the official logo for a wallet provider.
+ * Uses reliable public CDN sources (Walletconnect explorer, GitHub raw assets).
+ * Falls back to null so callers can render an initials badge instead.
+ */
+function wallet_provider_logo(string $name): ?string {
+    $map = [
+        // WalletConnect Explorer CDN (official registry)
+        'MetaMask'               => 'https://explorer-api.walletconnect.com/v3/logo/md/5195e9d5-94d8-41c4-a571-7b5f4e0a6f00?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'Trust Wallet'           => 'https://explorer-api.walletconnect.com/v3/logo/md/0528ee7e-16d1-4089-21a3-d5a3645b3400?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'Coinbase Wallet'        => 'https://explorer-api.walletconnect.com/v3/logo/md/a5ebc364-f7fa-4aa9-b545-ec0da2ee5400?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'Exodus'                 => 'https://explorer-api.walletconnect.com/v3/logo/md/4c16cad4-cac9-4643-6726-c696efaf5200?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'Ledger Live'            => 'https://explorer-api.walletconnect.com/v3/logo/md/a7f416de-aa03-4c5e-3280-ab49269aef00?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'Rainbow'                => 'https://explorer-api.walletconnect.com/v3/logo/md/7a33d7f1-3d12-4b5c-f3ee-5cd83cb1b500?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'SafePal'                => 'https://explorer-api.walletconnect.com/v3/logo/md/1801b1dc-f1a6-4d44-9b21-5c6dd09800?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'OKX Wallet'             => 'https://explorer-api.walletconnect.com/v3/logo/md/af7c236f-03f1-49c2-9893-9c1ffd93fe00?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'Zerion'                 => 'https://explorer-api.walletconnect.com/v3/logo/md/56c9fd48-5b38-4c83-f339-4e8d2dc49400?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        'Gnosis Safe'            => 'https://explorer-api.walletconnect.com/v3/logo/md/4f41d7f1-ae78-44be-9d28-5b80e0b00?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        // GitHub raw / official CDN assets
+        'Binance Wallet'         => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/www.binance.org.png',
+        'imToken'                => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/token.im.png',
+        'Guarda'                 => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/guarda.com.png',
+        'Atomic Wallet'          => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/atomicwallet.io.png',
+        'Coinomi'                => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/www.coinomi.com.png',
+        'BitPay'                 => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/bitpay.com.png',
+        'MyEtherWallet'          => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/www.myetherwallet.com.png',
+        'Crypto.com DeFi Wallet' => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/crypto.com.png',
+        'Huobi Wallet'           => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/www.huobi.com.png',
+        'BitKeep'                => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/bitkeep.com.png',
+    ];
+    return $map[$name] ?? null;
+}
+
 /** 1-2 letter badge initials for a provider name, e.g. "Trust Wallet" -> "TW". */
 function wallet_provider_initials(string $name): string {
     $words = preg_split('/\s+/', trim($name));

@@ -77,8 +77,19 @@ require __DIR__ . '/includes/dash_header.php';
     <div class="alert alert-info">No wallets linked yet. Pick a provider below or link one manually.</div>
   <?php else: foreach ($linked as $w): ?>
     <div class="address-box" style="margin-bottom:12px">
-      <?php [$g1, $g2] = wallet_provider_gradient($w['provider'] ?: $w['address']); ?>
-      <span class="wallet-logo sm" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($w['provider'] ?: '??')) ?></span>
+      <?php
+        [$g1, $g2] = wallet_provider_gradient($w['provider'] ?: $w['address']);
+        $logoUrl    = $w['provider'] ? wallet_provider_logo($w['provider']) : null;
+      ?>
+      <?php if ($logoUrl): ?>
+        <span class="wallet-logo sm" style="background:#fff;padding:3px">
+          <img src="<?= e($logoUrl) ?>" alt="<?= e($w['provider']) ?>"
+               style="width:100%;height:100%;object-fit:contain;border-radius:6px"
+               onerror="this.parentNode.innerHTML='<?= e(wallet_provider_initials($w['provider'] ?: '??')) ?>';this.parentNode.style.background='linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)'">
+        </span>
+      <?php else: ?>
+        <span class="wallet-logo sm" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($w['provider'] ?: '??')) ?></span>
+      <?php endif; ?>
       <div style="flex:1;min-width:0;margin-left:12px">
         <div style="font-weight:700;color:var(--navy);font-size:14px"><?= e($w['label'] ?: ($w['provider'] ?: 'Wallet')) ?></div>
         <div style="font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
@@ -100,14 +111,25 @@ require __DIR__ . '/includes/dash_header.php';
   </div>
 
   <div class="provider-grid">
-    <?php foreach ($providers as $p): [$g1, $g2] = wallet_provider_gradient($p); ?>
-      <div class="provider-card" onclick="openLinkModal('<?= e($p) ?>','<?= e($g1) ?>','<?= e($g2) ?>')">
-        <span class="wallet-logo" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($p)) ?></span>
+    <?php foreach ($providers as $p):
+      [$g1, $g2] = wallet_provider_gradient($p);
+      $logoUrl    = wallet_provider_logo($p);
+    ?>
+      <div class="provider-card" onclick="openLinkModal('<?= e($p) ?>','<?= e($g1) ?>','<?= e($g2) ?>','<?= e($logoUrl ?? '') ?>')">
+        <?php if ($logoUrl): ?>
+          <span class="wallet-logo" style="background:#fff;padding:4px">
+            <img src="<?= e($logoUrl) ?>" alt="<?= e($p) ?>"
+                 style="width:100%;height:100%;object-fit:contain;border-radius:8px"
+                 onerror="this.parentNode.style.background='linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)';this.parentNode.innerHTML='<?= e(wallet_provider_initials($p)) ?>'">
+          </span>
+        <?php else: ?>
+          <span class="wallet-logo" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($p)) ?></span>
+        <?php endif; ?>
         <span class="wallet-name"><?= e($p) ?></span>
         <span class="wallet-tag">Compatible</span>
       </div>
     <?php endforeach; ?>
-    <div class="provider-card" onclick="openLinkModal('','#64748b','#334155')">
+    <div class="provider-card" onclick="openLinkModal('','#64748b','#334155','')">
       <span class="wallet-logo" style="background:linear-gradient(135deg,#64748b,#334155)">&#43;</span>
       <span class="wallet-name">Other / Manual</span>
       <span class="wallet-tag">Any address</span>
@@ -206,14 +228,32 @@ function walletInitials(name) {
   if (!name) return '+';
   return name.trim().split(/\s+/).slice(0,2).map(function(w){return w[0].toUpperCase();}).join('') || '?';
 }
-function openLinkModal(provider, g1, g2) {
-  document.getElementById('linkProvider').value   = provider;
+function openLinkModal(provider, g1, g2, logoUrl) {
+  document.getElementById('linkProvider').value         = provider;
   document.getElementById('linkModalTitle').textContent = provider ? 'Link ' + provider : 'Link Wallet';
   document.getElementById('linkModalSub').textContent   = provider ? 'Connect your ' + provider + ' wallet' : 'Connect a public address';
-  document.getElementById('linkWalletName').value = provider;
+  document.getElementById('linkWalletName').value       = provider;
   var logo = document.getElementById('linkModalLogo');
-  logo.textContent   = walletInitials(provider);
-  logo.style.background = 'linear-gradient(135deg,' + (g1||'#64748b') + ',' + (g2||'#334155') + ')';
+  // Clear previous content
+  logo.innerHTML     = '';
+  logo.style.padding = '';
+  if (logoUrl) {
+    logo.style.background = '#fff';
+    logo.style.padding    = '4px';
+    var img = document.createElement('img');
+    img.src   = logoUrl;
+    img.alt   = provider;
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:8px';
+    img.onerror = function() {
+      logo.innerHTML    = walletInitials(provider);
+      logo.style.background = 'linear-gradient(135deg,' + (g1||'#64748b') + ',' + (g2||'#334155') + ')';
+      logo.style.padding = '';
+    };
+    logo.appendChild(img);
+  } else {
+    logo.textContent      = walletInitials(provider) || '+';
+    logo.style.background = 'linear-gradient(135deg,' + (g1||'#64748b') + ',' + (g2||'#334155') + ')';
+  }
   switchTab('address');
   document.getElementById('linkModalOverlay').style.display = 'flex';
 }
