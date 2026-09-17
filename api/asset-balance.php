@@ -13,6 +13,9 @@ require_once __DIR__ . '/../includes/wallet.php';
 
 header('Content-Type: application/json');
 
+// Auto-create asset_balances table if migration not yet run
+ensure_asset_balances_table();
+
 function json_out(array $data): void {
     echo json_encode($data);
     exit;

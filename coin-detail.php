@@ -19,11 +19,20 @@ if (!isset($assetMap[$ticker])) {
 [$ticker, $coinName, $network, $logoUrl] = $assetMap[$ticker];
 
 // ── Load per-asset balance from asset_balances table ────────────────────────
-$abStmt = db()->prepare('SELECT crypto_amount, demo_usd_amount FROM asset_balances WHERE user_id = ? AND asset_symbol = ?');
-$abStmt->execute([$user['id'], $ticker]);
-$assetBal       = $abStmt->fetch(PDO::FETCH_ASSOC);
-$existingCrypto = $assetBal ? (float) $assetBal['crypto_amount']   : 0;
-$existingUsd    = $assetBal ? (float) $assetBal['demo_usd_amount'] : 0;
+ensure_asset_balances_table();   // auto-creates table if migration not yet run
+$existingCrypto = 0;
+$existingUsd    = 0;
+try {
+    $abStmt = db()->prepare('SELECT crypto_amount, demo_usd_amount FROM asset_balances WHERE user_id = ? AND asset_symbol = ?');
+    $abStmt->execute([$user['id'], $ticker]);
+    $assetBal = $abStmt->fetch(PDO::FETCH_ASSOC);
+    if ($assetBal) {
+        $existingCrypto = (float) $assetBal['crypto_amount'];
+        $existingUsd    = (float) $assetBal['demo_usd_amount'];
+    }
+} catch (PDOException $e) {
+    // Table not yet created — show zero balance, form still works once table exists
+}
 
 $syncedAt  = date('Y-m-d H:i') . ' UTC';
 $pageTitle = $coinName;

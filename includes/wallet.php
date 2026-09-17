@@ -4,6 +4,32 @@
  * dashboard.php and the admin panel.
  */
 
+/**
+ * Ensures the asset_balances table exists. Called at the top of every page
+ * that queries it — so the site works even before migration_v8.sql is run.
+ */
+function ensure_asset_balances_table(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    try {
+        db()->exec("CREATE TABLE IF NOT EXISTS asset_balances (
+            id              INT AUTO_INCREMENT PRIMARY KEY,
+            user_id         INT            NOT NULL,
+            asset_symbol    VARCHAR(20)    NOT NULL,
+            asset_name      VARCHAR(100)   NOT NULL DEFAULT '',
+            crypto_amount   DECIMAL(30,10) NOT NULL DEFAULT 0,
+            demo_usd_amount DECIMAL(18,2)  NOT NULL DEFAULT 0.00,
+            created_at      DATETIME       DEFAULT CURRENT_TIMESTAMP,
+            updated_at      DATETIME       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_user_asset (user_id, asset_symbol),
+            CONSTRAINT fk_ab_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (PDOException $e) {
+        // Non-fatal: fall through — queries will return empty results gracefully
+    }
+}
+
 function wallet_supported_assets(): array {
     return ['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'XRP', 'TRX', 'DOGE', 'LTC', 'XLM'];
 }

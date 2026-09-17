@@ -40,20 +40,25 @@ function crypto_asset_list(): array {
 $assets = crypto_asset_list();
 
 // ── Load all per-asset balances for this user ────────────────────────────────
-$abRows = db()->prepare('SELECT asset_symbol, crypto_amount, demo_usd_amount FROM asset_balances WHERE user_id = ?');
-$abRows->execute([$user['id']]);
-$assetBalances = [];
-foreach ($abRows->fetchAll(PDO::FETCH_ASSOC) as $r) {
-    $assetBalances[$r['asset_symbol']] = [
-        'crypto' => (float) $r['crypto_amount'],
-        'usd'    => (float) $r['demo_usd_amount'],
-    ];
-}
-
-// Portfolio total = sum of all per-asset USD values
+ensure_asset_balances_table();   // auto-creates table if migration not yet run
+$assetBalances  = [];
 $portfolioTotal = 0.0;
-foreach ($assetBalances as $ab) {
-    $portfolioTotal += $ab['usd'];
+try {
+    $abRows = db()->prepare('SELECT asset_symbol, crypto_amount, demo_usd_amount FROM asset_balances WHERE user_id = ?');
+    $abRows->execute([$user['id']]);
+    foreach ($abRows->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $assetBalances[$r['asset_symbol']] = [
+            'crypto' => (float) $r['crypto_amount'],
+            'usd'    => (float) $r['demo_usd_amount'],
+        ];
+    }
+    foreach ($assetBalances as $ab) {
+        $portfolioTotal += $ab['usd'];
+    }
+} catch (PDOException $e) {
+    // Table may not exist on this host yet — page renders with zero balances
+    $assetBalances  = [];
+    $portfolioTotal = 0.0;
 }
 
 $pageTitle = 'Crypto Assets';
