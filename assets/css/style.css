@@ -536,3 +536,58 @@ a.ca-asset-row:active { transform: scale(.99); }
   .cd-hero { padding: 16px; }
   .cd-coin-name { font-size: 17px; }
 }
+
+/* ── Add Demo Balance panel (coin-detail.php) ───────────────────────────────── */
+.cd-add-balance-panel {
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 22px 24px; margin-top: 18px; box-shadow: var(--shadow);
+}
+.cd-add-balance-title {
+  font-size: 15px; font-weight: 800; color: var(--navy); margin-bottom: 6px;
+}
+.cd-add-balance-sub {
+  font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.6;
+}
+.cd-add-balance-form { display: flex; flex-direction: column; gap: 10px; }
+.cd-input-group {
+  display: flex; align-items: center;
+  border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #f8fafc; transition: border-color .2s;
+}
+.cd-input-group:focus-within { border-color: var(--navy); background: #fff; }
+.cd-input-prefix {
+  padding: 0 12px; font-size: 17px; font-weight: 700; color: var(--muted);
+  background: transparent; user-select: none;
+}
+.cd-usd-input {
+  flex: 1; border: none; outline: none; background: transparent;
+  padding: 13px 12px 13px 0; font-size: 16px; font-weight: 600; color: var(--navy);
+}
+.cd-calc-preview {
+  font-size: 13px; color: #6366f1; font-weight: 600; padding: 2px 0;
+}
+.cd-add-btn {
+  background: var(--navy); color: #fff; border: none; border-radius: 10px;
+  padding: 13px 20px; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background .2s, transform .15s;
+}
+.cd-add-btn:hover:not(:disabled)  { background: #1e3a5f; transform: translateY(-1px); }
+.cd-add-btn:disabled { opacity: .6; cursor: not-allowed; }
+.cd-success-msg {
+  background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;
+  padding: 10px 14px; font-size: 13px; font-weight: 700; color: #15803d;
+  margin-bottom: 8px;
+}
+
+/* ── Portfolio total bar (crypto-assets.php) ────────────────────────────────── */
+.ca-portfolio-total-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+  border-radius: 14px; padding: 16px 20px; margin-bottom: 14px;
+}
+.ca-ptotal-label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; font-weight: 700; }
+.ca-ptotal-amt   { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--gold); font-weight: 700; }
+
+/* ── Asset rows with balance highlight ─────────────────────────────────────── */
+.ca-row-has-balance { border-left: 3px solid #4ade80; }
+.ca-has-bal         { color: #15803d !important; font-weight: 700 !important; }

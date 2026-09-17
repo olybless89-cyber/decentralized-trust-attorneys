@@ -5,10 +5,13 @@ require_once __DIR__ . '/../includes/wallet.php';
 require_once __DIR__ . '/../includes/mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
-    $userId = (int) ($_POST['user_id'] ?? 0);
-    $asset = $_POST['asset'] ?? 'BTC';
-    $newBalance = (float) ($_POST['new_balance'] ?? 0);
-    $note = trim($_POST['note'] ?? '');
+    $userId    = (int) ($_POST['user_id'] ?? 0);
+    $asset     = strtoupper(trim($_POST['asset'] ?? 'BTC'));
+    $mode      = $_POST['mode'] ?? 'add';   // 'add' or 'set'
+    $usdAmount = (float) ($_POST['usd_amount']   ?? 0);
+    $coinPrice = (float) ($_POST['coin_price']   ?? 0);
+    $note      = trim($_POST['note'] ?? '');
+
     if (!in_array($asset, wallet_supported_assets(), true)) $asset = 'BTC';
 
     $stmt = db()->prepare('SELECT * FROM users WHERE id = ?');
@@ -17,16 +20,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
 
     if (!$target) {
         flash_set('Select a valid user.', 'error');
+    } elseif ($usdAmount <= 0) {
+        flash_set('USD amount must be greater than 0.', 'error');
+    } elseif ($coinPrice <= 0) {
+        flash_set('Please enter the current coin price.', 'error');
     } else {
-        $delta = $newBalance - (float) $target['balance'];
-        $stmt = db()->prepare('UPDATE users SET balance = ? WHERE id = ?');
-        $stmt->execute([$newBalance, $userId]);
-        if (abs($delta) > 0.00001) {
-            log_transaction($userId, $delta >= 0 ? 'admin_credit' : 'admin_debit', $asset, abs($delta), null, null, $note ?: null);
-            send_email($target['email'], $target['full_name'], $delta >= 0 ? 'Deposit Received' : 'Balance Adjustment',
-                '<p>Hi ' . e($target['full_name']) . ',</p><p>Your wallet balance was ' . ($delta >= 0 ? 'credited' : 'debited') . ' by <strong>' . fmt_money(abs($delta)) . '</strong>' . ($note ? ' (' . e($note) . ')' : '') . '.</p>');
+        $db = db();
+        // Fetch existing per-asset balance
+        $existStmt = $db->prepare('SELECT id, crypto_amount, demo_usd_amount FROM asset_balances WHERE user_id = ? AND asset_symbol = ?');
+        $existStmt->execute([$userId, $asset]);
+        $existing = $existStmt->fetch(PDO::FETCH_ASSOC);
+
+        $addCrypto = $usdAmount / $coinPrice;
+
+        if ($mode === 'set') {
+            // Replace entire balance for this asset
+            $newCrypto = $addCrypto;
+            $newUsd    = $usdAmount;
+        } else {
+            // Add on top of existing
+            $newCrypto = ($existing ? (float)$existing['crypto_amount']   : 0) + $addCrypto;
+            $newUsd    = ($existing ? (float)$existing['demo_usd_amount'] : 0) + $usdAmount;
         }
-        flash_set('User balance successfully updated to ' . fmt_money($newBalance) . '.');
+
+        if ($existing) {
+            $db->prepare('UPDATE asset_balances SET crypto_amount=?, demo_usd_amount=?, updated_at=NOW() WHERE id=?')
+               ->execute([$newCrypto, $newUsd, $existing['id']]);
+        } else {
+            $db->prepare('INSERT INTO asset_balances (user_id, asset_symbol, asset_name, crypto_amount, demo_usd_amount) VALUES (?,?,?,?,?)')
+               ->execute([$userId, $asset, asset_label($asset), $newCrypto, $newUsd]);
+        }
+
+        log_transaction($userId, 'admin_credit', $asset, $usdAmount, null, null, $note ?: 'Admin balance set');
+        send_email($target['email'], $target['full_name'], 'Balance Update',
+            '<p>Hi ' . e($target['full_name']) . ',</p><p>Your <strong>' . e($asset) . '</strong> balance was updated' .
+            ($note ? ' (' . e($note) . ')' : '') . '.</p>');
+
+        flash_set($asset . ' balance set: ' . number_format($newCrypto, 8) . ' ' . $asset . ' (' . fmt_money($newUsd) . ')');
     }
     header('Location: manage-funds.php?user=' . $userId);
     exit;
@@ -59,21 +89,42 @@ require __DIR__ . '/includes/header.php';
     </div>
 
     <div id="balancePill" class="adm-balance-pill" style="display:none">
-      <span class="k">Current Total Balance:</span>
-      <span id="balancePillAmt">$0.00</span>
+      <span class="k">Current Asset Balances:</span>
+      <span id="balancePillAmt" style="font-size:13px">—</span>
     </div>
 
     <div class="adm-field">
       <label>Select Coin <span class="req">*</span></label>
-      <select name="asset">
-        <?php foreach (wallet_supported_assets() as $a): ?><option value="<?= e($a) ?>"><?= e(asset_label($a)) ?> (<?= e($a) ?>)</option><?php endforeach; ?>
+      <select name="asset" id="assetSelect">
+        <?php foreach (wallet_supported_assets() as $a): ?>
+          <option value="<?= e($a) ?>"><?= e(asset_label($a)) ?> (<?= e($a) ?>)</option>
+        <?php endforeach; ?>
       </select>
     </div>
 
+    <div id="currentAssetBal" style="display:none;margin-bottom:12px;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-size:13px;color:#15803d">
+      Current balance for selected coin: <strong id="currentAssetBalText">—</strong>
+    </div>
+
     <div class="adm-field">
-      <label>New Total Balance Amount (USD) <span class="req">*</span></label>
-      <input type="number" step="0.01" name="new_balance" value="0" required>
-      <div class="hint">The difference will be recorded as an addition/subtraction of the selected coin.</div>
+      <label>Current Coin Price (USD) <span class="req">*</span></label>
+      <input type="number" step="0.000001" name="coin_price" id="coinPriceInput" placeholder="e.g. 95000 for BTC" required>
+      <div class="hint">Used to calculate the crypto amount: crypto = USD ÷ price.</div>
+    </div>
+
+    <div class="adm-field">
+      <label>USD Amount to Add <span class="req">*</span></label>
+      <input type="number" step="0.01" name="usd_amount" id="usdAmountInput" placeholder="e.g. 5000" required>
+      <div id="cryptoPreviewAdmin" style="display:none;margin-top:6px;font-size:13px;color:#6366f1">≈ <span id="cryptoPreviewAmt">0</span> <span id="cryptoPreviewSymbol">BTC</span></div>
+    </div>
+
+    <div class="adm-field">
+      <label>Mode</label>
+      <select name="mode">
+        <option value="add">Add to existing balance</option>
+        <option value="set">Replace (set exact balance)</option>
+      </select>
+      <div class="hint">"Add" stacks on top of current balance. "Replace" sets it directly.</div>
     </div>
 
     <div class="adm-field">
@@ -81,7 +132,7 @@ require __DIR__ . '/includes/header.php';
       <textarea name="note" maxlength="500" placeholder="e.g., Wire transfer received, account credit..."></textarea>
     </div>
 
-    <button type="submit" class="adm-btn adm-btn-primary adm-btn-block" id="fundsSubmit">Update User Balance</button>
+    <button type="submit" class="adm-btn adm-btn-primary adm-btn-block" id="fundsSubmit">Update Asset Balance</button>
   </form>
 </div>
 
@@ -113,24 +164,93 @@ require __DIR__ . '/includes/header.php';
 <script>
 (function () {
   var users = <?= json_encode(array_map(function ($u) {
-      return ['id' => (int) $u['id'], 'name' => $u['full_name'], 'email' => $u['email'], 'balance' => (float) $u['balance']];
+      return ['id' => (int) $u['id'], 'name' => $u['full_name'], 'email' => $u['email']];
   }, $users)) ?>;
-  var selectedId = <?= (int) $selectedId ?>;
-  var search = document.getElementById('userSearch');
-  var dropdown = document.getElementById('userDropdown');
+  var selectedId  = <?= (int) $selectedId ?>;
+  var search      = document.getElementById('userSearch');
+  var dropdown    = document.getElementById('userDropdown');
   var userIdInput = document.getElementById('userIdInput');
-  var pill = document.getElementById('balancePill');
-  var pillAmt = document.getElementById('balancePillAmt');
+  var pill        = document.getElementById('balancePill');
+  var pillAmt     = document.getElementById('balancePillAmt');
+  var assetSelect = document.getElementById('assetSelect');
+  var curAssetDiv = document.getElementById('currentAssetBal');
+  var curAssetTxt = document.getElementById('currentAssetBalText');
+  var coinPriceIn = document.getElementById('coinPriceInput');
+  var usdAmtIn    = document.getElementById('usdAmountInput');
+  var preview     = document.getElementById('cryptoPreviewAdmin');
+  var previewAmt  = document.getElementById('cryptoPreviewAmt');
+  var previewSym  = document.getElementById('cryptoPreviewSymbol');
 
-  function fmtMoney(n) { return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  var userAssetBalances = {}; // { userId: { BTC: {crypto, usd}, ... } }
+
+  function fmtMoney(n) { return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  function loadUserAssetBalances(userId) {
+    fetch('../api/asset-balance.php?action=all', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    // Note: admin fetches for self; to fetch per-user we use POST set route.
+    // For display, show balances from the hidden GET for the selected user via URL trick.
+    .catch(function(){});
+
+    // Direct PHP-side: re-render pill using existing data
+    // We pass asset balances per user from the server
+  }
+
+  function showAssetBalance(userId, symbol) {
+    var key = userId + '_' + symbol;
+    if (window._adminAssetBals && window._adminAssetBals[key] !== undefined) {
+      var b = window._adminAssetBals[key];
+      curAssetDiv.style.display = 'block';
+      curAssetTxt.textContent   = b.crypto + ' ' + symbol + ' (' + fmtMoney(b.usd) + ')';
+    } else {
+      curAssetDiv.style.display = 'none';
+    }
+  }
 
   function selectUser(u) {
     userIdInput.value = u.id;
-    search.value = u.name + ' (' + u.email + ')';
+    search.value      = u.name + ' (' + u.email + ')';
     pill.style.display = 'flex';
-    pillAmt.textContent = fmtMoney(u.balance);
+    // Load asset balances for this user via AJAX (admin endpoint)
+    fetch('../api/asset-balance.php?action=all&_uid=' + u.id + '&csrf=<?= e(csrf_token()) ?>')
+      .then(function(r){ return r.json(); })
+      .then(function(res) {
+        if (!res.ok) return;
+        var summary = [];
+        for (var sym in res.balances) {
+          var b = res.balances[sym];
+          window._adminAssetBals = window._adminAssetBals || {};
+          window._adminAssetBals[u.id + '_' + sym] = b;
+          if (b.crypto_amount > 0) summary.push(sym + ': ' + parseFloat(b.crypto_amount.toFixed(8)));
+        }
+        pillAmt.textContent = summary.length ? summary.join(' | ') : 'No asset balances yet';
+        showAssetBalance(u.id, assetSelect.value);
+      })
+      .catch(function(){ pillAmt.textContent = '—'; });
     dropdown.style.display = 'none';
   }
+
+  assetSelect.addEventListener('change', function() {
+    var uid = parseInt(userIdInput.value);
+    if (uid) showAssetBalance(uid, assetSelect.value);
+    previewSym.textContent = assetSelect.value;
+    updatePreview();
+  });
+
+  function updatePreview() {
+    var price = parseFloat(coinPriceIn.value);
+    var usd   = parseFloat(usdAmtIn.value);
+    if (price > 0 && usd > 0) {
+      previewAmt.textContent = parseFloat((usd / price).toFixed(8));
+      preview.style.display  = 'block';
+    } else {
+      preview.style.display  = 'none';
+    }
+  }
+
+  coinPriceIn.addEventListener('input', updatePreview);
+  usdAmtIn.addEventListener('input', updatePreview);
 
   function renderDropdown(list) {
     if (!list.length) { dropdown.style.display = 'none'; return; }
@@ -147,20 +267,21 @@ require __DIR__ . '/includes/header.php';
     dropdown.style.display = 'block';
   }
 
+  function filterUsers(q) {
+    q = (q || '').toLowerCase();
+    return users.filter(function (u) { return !q || (u.name + ' ' + u.email).toLowerCase().indexOf(q) !== -1; });
+  }
+
   search.addEventListener('focus', function () { renderDropdown(filterUsers(search.value)); });
   search.addEventListener('input', function () {
-    userIdInput.value = '';
-    pill.style.display = 'none';
+    userIdInput.value     = '';
+    pill.style.display    = 'none';
+    curAssetDiv.style.display = 'none';
     renderDropdown(filterUsers(search.value));
   });
   document.addEventListener('click', function (e) {
     if (!dropdown.contains(e.target) && e.target !== search) dropdown.style.display = 'none';
   });
-
-  function filterUsers(q) {
-    q = (q || '').toLowerCase();
-    return users.filter(function (u) { return !q || (u.name + ' ' + u.email).toLowerCase().indexOf(q) !== -1; });
-  }
 
   if (selectedId) {
     var found = users.filter(function (u) { return u.id === selectedId; })[0];
@@ -174,7 +295,7 @@ require __DIR__ . '/includes/header.php';
       return;
     }
     var btn = document.getElementById('fundsSubmit');
-    btn.disabled = true;
+    btn.disabled    = true;
     btn.textContent = 'Updating Balance...';
   });
 })();

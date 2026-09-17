@@ -37,9 +37,26 @@ function crypto_asset_list(): array {
     ];
 }
 
-$assets         = crypto_asset_list();
-$portfolioTotal = (float) $user['balance'];
-$pageTitle      = 'Crypto Assets';
+$assets = crypto_asset_list();
+
+// ── Load all per-asset balances for this user ────────────────────────────────
+$abRows = db()->prepare('SELECT asset_symbol, crypto_amount, demo_usd_amount FROM asset_balances WHERE user_id = ?');
+$abRows->execute([$user['id']]);
+$assetBalances = [];
+foreach ($abRows->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    $assetBalances[$r['asset_symbol']] = [
+        'crypto' => (float) $r['crypto_amount'],
+        'usd'    => (float) $r['demo_usd_amount'],
+    ];
+}
+
+// Portfolio total = sum of all per-asset USD values
+$portfolioTotal = 0.0;
+foreach ($assetBalances as $ab) {
+    $portfolioTotal += $ab['usd'];
+}
+
+$pageTitle = 'Crypto Assets';
 require __DIR__ . '/includes/dash_header.php';
 ?>
 
@@ -59,10 +76,21 @@ require __DIR__ . '/includes/dash_header.php';
   </a>
 </div>
 
+<!-- ── Portfolio total header ── -->
+<?php if ($portfolioTotal > 0): ?>
+<div class="ca-portfolio-total-bar">
+  <span class="ca-ptotal-label">Portfolio Value</span>
+  <span class="ca-ptotal-amt" id="caPortfolioTotal"><?= fmt_money($portfolioTotal) ?></span>
+</div>
+<?php endif; ?>
+
 <!-- ── Asset list ── -->
 <div class="ca-asset-list">
-  <?php foreach ($assets as [$ticker, $name, $network, $logo]): ?>
-  <a href="coin-detail.php?coin=<?= urlencode($ticker) ?>" class="ca-asset-row"
+  <?php foreach ($assets as [$ticker, $name, $network, $logo]):
+    $bal = $assetBalances[$ticker] ?? ['crypto'=>0,'usd'=>0];
+    $hasBal = $bal['crypto'] > 0;
+  ?>
+  <a href="coin-detail.php?coin=<?= urlencode($ticker) ?>" class="ca-asset-row<?= $hasBal ? ' ca-row-has-balance' : '' ?>"
      data-ticker="<?= e($ticker) ?>">
     <!-- Left: icon + name + price -->
     <div class="ca-asset-left">
@@ -79,89 +107,107 @@ require __DIR__ . '/includes/dash_header.php';
         </div>
       </div>
     </div>
-    <!-- Right: coin amount + usd OR just ticker -->
+    <!-- Right: per-asset balance -->
     <div class="ca-asset-right">
-      <div class="ca-asset-coinamt" data-coinamt="<?= e($ticker) ?>"></div>
-      <div class="ca-asset-usd"    data-usdval="<?= e($ticker) ?>">
-        <?= e($ticker) ?>
-      </div>
+      <?php if ($hasBal): ?>
+        <div class="ca-asset-coinamt">
+          <?= rtrim(rtrim(number_format($bal['crypto'], 10), '0'), '.') ?> <?= e($ticker) ?>
+        </div>
+        <div class="ca-asset-usd ca-has-bal" data-base-usd="<?= e($bal['usd']) ?>" data-crypto="<?= e($bal['crypto']) ?>" data-ticker="<?= e($ticker) ?>">
+          <?= fmt_money($bal['usd']) ?>
+        </div>
+      <?php else: ?>
+        <div class="ca-asset-coinamt"></div>
+        <div class="ca-asset-usd"><?= e($ticker) ?></div>
+      <?php endif; ?>
     </div>
   </a>
   <?php endforeach; ?>
 </div>
 
-<!-- Static price data (matches reference screenshot values) -->
+<!-- Price + live USD value updates -->
 <script>
-const CA_PRICES = {
-  XRP:   { price: 1.29,      change: 0.5,  userAmt: 265.211, userUsd: 342.12 },
-  BTC:   { price: 76344.48,  change: 0.7,  userAmt: 0,       userUsd: 0 },
-  ETH:   { price: 2433.51,   change: 1.4,  userAmt: 0,       userUsd: 0 },
-  USDT:  { price: 0.9992,    change: 0.1,  userAmt: 0,       userUsd: 0 },
-  BNB:   { price: 723.76,    change: 2.1,  userAmt: 0,       userUsd: 0 },
-  USDC:  { price: 0.9996,    change: 0.1,  userAmt: 0,       userUsd: 0 },
-  SOL:   { price: 99.78,     change: 2.9,  userAmt: 0,       userUsd: 0 },
-  TRX:   { price: 0.3347,    change: 0.1,  userAmt: 0,       userUsd: 0 },
-  DOGE:  { price: 0.0808,    change: 1.4,  userAmt: 0,       userUsd: 0 },
-  LTC:   { price: 84.20,     change: 0.8,  userAmt: 0,       userUsd: 0 },
-  XLM:   { price: 0.1124,    change: 0.3,  userAmt: 0,       userUsd: 0 },
-  AVAX:  { price: 28.54,     change: 1.6,  userAmt: 0,       userUsd: 0 },
-  MATIC: { price: 0.4821,    change: 1.1,  userAmt: 0,       userUsd: 0 },
-  DOT:   { price: 5.91,      change: 0.9,  userAmt: 0,       userUsd: 0 },
-  ADA:   { price: 0.3612,    change: 0.6,  userAmt: 0,       userUsd: 0 },
-  LINK:  { price: 11.38,     change: 1.3,  userAmt: 0,       userUsd: 0 },
-  UNI:   { price: 6.74,      change: 0.5,  userAmt: 0,       userUsd: 0 },
-  ATOM:  { price: 4.57,      change: 1.0,  userAmt: 0,       userUsd: 0 },
-  NEAR:  { price: 3.22,      change: 2.0,  userAmt: 0,       userUsd: 0 },
-  ICP:   { price: 7.88,      change: 0.4,  userAmt: 0,       userUsd: 0 },
-  VET:   { price: 0.0238,    change: 0.7,  userAmt: 0,       userUsd: 0 },
-  FIL:   { price: 3.64,      change: 0.9,  userAmt: 0,       userUsd: 0 },
-  ALGO:  { price: 0.1589,    change: 0.2,  userAmt: 0,       userUsd: 0 },
-  FTM:   { price: 0.6231,    change: 1.5,  userAmt: 0,       userUsd: 0 },
-  XTZ:   { price: 0.7012,    change: 0.3,  userAmt: 0,       userUsd: 0 },
-};
+(function() {
+  // Per-asset crypto holdings from PHP (crypto_amount stored per coin)
+  var ASSET_CRYPTO = <?= json_encode(array_combine(
+      array_column($assets, 0),
+      array_map(function($a) use ($assetBalances) {
+          return isset($assetBalances[$a[0]]) ? (float)$assetBalances[$a[0]]['crypto'] : 0;
+      }, $assets)
+  )) ?>;
 
-function fmtPrice(v) {
-  if (v >= 1000) return '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-  if (v >= 1)    return '$' + v.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
-  return '$' + v.toFixed(4);
-}
-function fmtUsd(v) {
-  return '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
-function fmtAmt(v, ticker) {
-  const dp = (v > 100) ? 3 : (v > 1 ? 4 : 6);
-  return v.toFixed(dp) + ' ' + ticker;
-}
-
-document.querySelectorAll('.ca-asset-row').forEach(row => {
-  const t = row.dataset.ticker;
-  const d = CA_PRICES[t];
-  if (!d) return;
-
-  // Price
-  const priceEl = row.querySelector('[data-price]');
-  if (priceEl) priceEl.textContent = fmtPrice(d.price);
-
-  // % change
-  const changeEl = row.querySelector('[data-change]');
-  if (changeEl) {
-    const sign = d.change >= 0 ? '+' : '';
-    changeEl.textContent = sign + d.change.toFixed(1) + '%';
-    changeEl.classList.toggle('ca-change-up',   d.change >= 0);
-    changeEl.classList.toggle('ca-change-down', d.change <  0);
+  function fmtPrice(v) {
+    if (v >= 1000) return '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    if (v >= 1)    return '$' + v.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+    return '$' + v.toFixed(6);
+  }
+  function fmtUsd(v) {
+    return '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function fmtCrypto(v, ticker) {
+    var dp = v > 100 ? 3 : v > 1 ? 4 : 6;
+    return parseFloat(v.toFixed(dp)) + ' ' + ticker;
   }
 
-  // Right side: coin amount + USD if user holds, else just ticker
-  const amtEl = row.querySelector('[data-coinamt]');
-  const usdEl = row.querySelector('[data-usdval]');
-  if (d.userAmt > 0) {
-    if (amtEl) amtEl.textContent = fmtAmt(d.userAmt, t);
-    if (usdEl) usdEl.textContent = fmtUsd(d.userUsd);
-  } else {
-    if (amtEl) amtEl.textContent = '';
-    if (usdEl) usdEl.textContent = t;   // just show ticker like reference
-  }
-});
+  // CoinGecko id map
+  var cgMap = {
+    BTC:'bitcoin', ETH:'ethereum', BNB:'binancecoin', SOL:'solana',
+    USDT:'tether', XRP:'ripple', TRX:'tron', DOGE:'dogecoin',
+    LTC:'litecoin', XLM:'stellar', AVAX:'avalanche-2', MATIC:'matic-network',
+    DOT:'polkadot', ADA:'cardano', LINK:'chainlink', UNI:'uniswap',
+    ATOM:'cosmos', FTM:'fantom', ALGO:'algorand', NEAR:'near',
+    ICP:'internet-computer', VET:'vechain', FIL:'filecoin', XTZ:'tezos',
+    USDC:'usd-coin'
+  };
+
+  // Collect all tickers that have a cgMap entry
+  var tickers = Object.keys(cgMap);
+  var cgIds   = tickers.map(function(t){ return cgMap[t]; }).join(',');
+
+  fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + cgIds + '&vs_currencies=usd&include_24hr_change=true')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var livePortfolioTotal = 0;
+
+      document.querySelectorAll('.ca-asset-row').forEach(function(row) {
+        var t    = row.dataset.ticker;
+        var cgId = cgMap[t];
+        if (!cgId || !data[cgId]) return;
+
+        var price  = data[cgId].usd;
+        var change = data[cgId].usd_24h_change || 0;
+
+        // Price display
+        var priceEl = row.querySelector('[data-price]');
+        if (priceEl) priceEl.textContent = fmtPrice(price);
+
+        // % change
+        var changeEl = row.querySelector('[data-change]');
+        if (changeEl) {
+          changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+          changeEl.classList.toggle('ca-change-up',   change >= 0);
+          changeEl.classList.toggle('ca-change-down', change <  0);
+        }
+
+        // Per-asset live USD value (crypto_amount * live price)
+        var cryptoHeld = ASSET_CRYPTO[t] || 0;
+        if (cryptoHeld > 0) {
+          var liveUsd = cryptoHeld * price;
+          livePortfolioTotal += liveUsd;
+          // Update the USD value cell
+          var usdEl = row.querySelector('.ca-has-bal');
+          if (usdEl) usdEl.textContent = fmtUsd(liveUsd);
+        }
+      });
+
+      // Update portfolio total with live prices
+      var ptEl = document.getElementById('caPortfolioTotal');
+      if (ptEl && livePortfolioTotal > 0) ptEl.textContent = fmtUsd(livePortfolioTotal);
+    })
+    .catch(function(){
+      // Fallback: prices stay as PHP-rendered values
+    });
+})();
 </script>
 
 <?php require __DIR__ . '/includes/dash_footer.php'; ?>
