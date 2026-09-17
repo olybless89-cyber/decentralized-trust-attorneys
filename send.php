@@ -18,10 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Enter a destination wallet address.';
         } elseif ($amount <= 0) {
             $errors[] = 'Enter a valid amount.';
-        } elseif ($amount > (float) $user['balance']) {
-            $errors[] = 'Amount exceeds your available balance.';
         } else {
+            // Re-fetch live balance inside a transaction to prevent race conditions
+            // and avoid using the stale static-cached value from current_user().
             db()->beginTransaction();
+            $liveRow = db()->prepare('SELECT balance FROM users WHERE id = ? FOR UPDATE');
+            $liveRow->execute([$user['id']]);
+            $liveBalance = (float) $liveRow->fetch()['balance'];
+            if ($amount > $liveBalance) {
+                db()->rollBack();
+                $errors[] = 'Amount exceeds your available balance.';
+            } else {
             $stmt = db()->prepare('UPDATE users SET balance = balance - ? WHERE id = ?');
             $stmt->execute([$amount, $user['id']]);
             log_transaction($user['id'], 'send', $asset, $amount, null, $destination);
@@ -31,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('Sent ' . fmt_money($amount) . ' worth of ' . $asset . '.');
             header('Location: dashboard.php');
             exit;
+            } // end balance check
         }
     }
 }

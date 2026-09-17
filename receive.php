@@ -31,7 +31,7 @@ require __DIR__ . '/includes/dash_header.php';
 
   <div class="address-box">
     <span id="walletAddr"><?= e($address) ?></span>
-    <button type="button" class="btn btn-outline btn-sm" onclick="copyAddr()">Copy</button>
+    <button type="button" class="btn btn-outline btn-sm" onclick="copyAddr(event)">Copy</button>
   </div>
   <?php if ($network): ?>
     <p class="hint" style="text-align:center;margin-top:8px"><strong>Network:</strong> <?= e($network) ?></p>
@@ -43,10 +43,11 @@ require __DIR__ . '/includes/dash_header.php';
 </div>
 
 <script>
-function copyAddr() {
+// Bug fix: accept event explicitly instead of relying on implicit global `event`.
+function copyAddr(ev) {
   const text = document.getElementById('walletAddr').innerText;
   navigator.clipboard.writeText(text).then(() => {
-    const btn = event.target;
+    const btn = ev.target;
     const old = btn.innerText;
     btn.innerText = 'Copied!';
     setTimeout(() => btn.innerText = old, 1500);

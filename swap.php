@@ -17,13 +17,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Choose two different assets to swap between.';
         } elseif ($amount <= 0) {
             $errors[] = 'Enter a valid amount.';
-        } elseif ($amount > (float) $user['balance']) {
-            $errors[] = 'Amount exceeds your available balance.';
         } else {
-            $fee = round($amount * 0.005, 2); // 0.5% demo swap fee
+            // Bug fix: re-fetch live balance with a row lock to avoid stale cache
+            // and correctly deduct the full swap amount (not just the fee).
             db()->beginTransaction();
+            $liveRow = db()->prepare('SELECT balance FROM users WHERE id = ? FOR UPDATE');
+            $liveRow->execute([$user['id']]);
+            $liveBalance = (float) $liveRow->fetch()['balance'];
+            if ($amount > $liveBalance) {
+                db()->rollBack();
+                $errors[] = 'Amount exceeds your available balance.';
+            } else {
+            $fee = round($amount * 0.005, 2); // 0.5% demo swap fee
+            // Deduct the full swap amount from the balance (fee is already included in it).
             $stmt = db()->prepare('UPDATE users SET balance = balance - ? WHERE id = ?');
-            $stmt->execute([$fee, $user['id']]);
+            $stmt->execute([$amount, $user['id']]);
             log_transaction($user['id'], 'swap', $from, $amount, $to, null, 'Fee: ' . fmt_money($fee));
             db()->commit();
             send_email($user['email'], $user['full_name'], 'Swap Confirmation',
@@ -31,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('Swapped ' . fmt_money($amount) . ' from ' . $from . ' to ' . $to . '.');
             header('Location: dashboard.php');
             exit;
+            } // end balance check
         }
     }
 }

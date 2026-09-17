@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formation_state = $formation_region !== '' ? ($formation_region . ', ' . $formation_country) : $formation_country;
 
         // --- validation ---
-        if ($full_name === '' || $email === '' || $country === '' || $business_name === '' || !isset($entityLabels[$entity_type])) {
+        if ($full_name === '' || $email === '' || $phone === '' || $country === '' || $business_name === '' || !isset($entityLabels[$entity_type])) {
             $errors[] = 'Please complete all required fields marked with *.';
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {

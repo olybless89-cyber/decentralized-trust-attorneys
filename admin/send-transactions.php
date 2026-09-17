@@ -6,9 +6,12 @@ require_once __DIR__ . '/../includes/wallet.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
     $id = (int) ($_POST['id'] ?? 0);
     $decision = $_POST['decision'] ?? '';
-    if (in_array($decision, ['completed', 'rejected'], true)) {
+    // Bug fix: transactions.status ENUM is ('completed','pending','failed') — 'rejected' is not valid.
+    // Map admin UI "reject" action to the valid ENUM value 'failed'.
+    $statusMap = ['completed' => 'completed', 'rejected' => 'failed'];
+    if (isset($statusMap[$decision])) {
         $stmt = db()->prepare("UPDATE transactions SET status = ? WHERE id = ? AND status = 'pending'");
-        $stmt->execute([$decision, $id]);
+        $stmt->execute([$statusMap[$decision], $id]);
         flash_set('Transaction marked ' . $decision . '.');
     }
     header('Location: send-transactions.php');
