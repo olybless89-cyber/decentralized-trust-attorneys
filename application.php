@@ -72,7 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = db()->prepare('INSERT INTO users (full_name, email, password_hash, phone, street_address, city, country, state_region, ssn_last4, id_document_path) VALUES (?,?,?,?,?,?,?,?,?,?)');
                 $stmt->execute([$full_name, $email, $hash, $phone, $street_address, $city, $country, $state_region, $ssn_last4 ?: null, $idDocPath]);
                 $userId = (int) db()->lastInsertId();
-                $_SESSION['user_id'] = $userId;
+                // Deliberately not auto-logging in here — a new user
+                // confirms their password once by logging in themselves,
+                // same as the Sign Up flow on login.php.
             }
 
             $stmt = db()->prepare('INSERT INTO applications (user_id, entity_type, business_name, state, owner_name, owner_email, owner_phone, address) VALUES (?,?,?,?,?,?,?,?)');
@@ -85,8 +87,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             send_email($email, $full_name, 'Application Received — ' . $business_name,
                 '<p>Hi ' . e($full_name) . ',</p><p>We\'ve received your formation application for <strong>' . e($business_name) . '</strong> (' . e($entityLabels[$entity_type]) . ', jurisdiction: ' . e($formation_state) . ').</p><p>Our team will review it and update the status on your dashboard. You\'ll get another email as soon as that happens.</p>');
 
-            flash_set('Application submitted! We will review it shortly.');
-            header('Location: dashboard.php');
+            if ($isNewUser) {
+                flash_set('Registration and application submitted successfully! Please log in with your details below to track it.');
+                header('Location: login.php?mode=login&next=' . urlencode('dashboard.php'));
+            } else {
+                flash_set('Application submitted! We will review it shortly.');
+                header('Location: dashboard.php');
+            }
             exit;
         }
     }
