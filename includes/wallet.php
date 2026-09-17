@@ -121,9 +121,29 @@ function wallet_provider_initials(string $name): string {
     return implode('', $letters) ?: '?';
 }
 
+
+/** Returns a canonical supported provider name, or null for an unknown provider. */
+function wallet_provider_name(?string $provider): ?string {
+    $provider = trim((string) $provider);
+    if ($provider === '') return null;
+    foreach (wallet_provider_list() as $supported) {
+        if (strcasecmp($supported, $provider) === 0) return $supported;
+    }
+    return null;
+}
+
+/** Accepts public address formats only; private keys and recovery phrases do not match. */
+function wallet_public_address_valid(string $address): bool {
+    $address = trim($address);
+    if (preg_match('/^0x[a-fA-F0-9]{40}$/', $address)) return true; // EVM chains
+    if (preg_match('/^(bc1|[13])[a-zA-Z0-9]{20,90}$/', $address)) return true; // Bitcoin
+    if (preg_match('/^[1-9A-HJ-NP-Za-km-z]{32,44}$/', $address)) return true; // Solana/base58
+    return false;
+}
+
 /** A user's currently-linked wallets (not yet unlinked), most recent first. */
 function wallet_linked_list(int $userId): array {
-    $stmt = db()->prepare("SELECT * FROM wallet_connections WHERE user_id = ? AND status != 'revoked' ORDER BY created_at DESC");
+    $stmt = db()->prepare("SELECT id, user_id, address, provider, label, method, status, created_at FROM wallet_connections WHERE user_id = ? AND status != 'revoked' ORDER BY created_at DESC");
     $stmt->execute([$userId]);
     return $stmt->fetchAll();
 }
