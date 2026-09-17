@@ -3,7 +3,8 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/includes/wallet.php';
 $user = require_login();
 
-$asset = $_GET['asset'] ?? 'BTC';
+// Pre-fill asset from coin-detail.php or direct link
+$asset = strtoupper(trim($_GET['asset'] ?? 'BTC'));
 if (!in_array($asset, wallet_supported_assets(), true)) $asset = 'BTC';
 $address = get_or_create_wallet_address($user, $asset);
 $network = wallet_network_labels()[$asset] ?? null;

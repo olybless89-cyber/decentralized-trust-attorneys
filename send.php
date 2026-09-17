@@ -43,10 +43,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Pre-fill asset from coin-detail.php
+$preAsset = strtoupper(trim($_GET['asset'] ?? ''));
+if (!in_array($preAsset, wallet_supported_assets(), true)) $preAsset = 'BTC';
+
 $pageTitle = 'Send';
 require __DIR__ . '/includes/dash_header.php';
 ?>
 <div class="panel" style="max-width:480px;margin:0 auto">
+  <?php if (!empty($_GET['asset'])): ?>
+    <div style="margin-bottom:16px">
+      <a href="coin-detail.php?coin=<?= urlencode($preAsset) ?>" class="cd-back-btn">&#8592; <?= e($preAsset) ?></a>
+    </div>
+  <?php endif; ?>
   <h3 style="margin-bottom:6px;text-align:center">Send Funds</h3>
   <p style="text-align:center;font-size:14px;margin-bottom:20px">Available balance: <strong style="color:var(--navy)"><?= fmt_money((float) $user['balance']) ?></strong></p>
   <?php foreach ($errors as $err): ?>
@@ -56,7 +65,7 @@ require __DIR__ . '/includes/dash_header.php';
     <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
     <div class="field"><label>Asset</label>
       <select name="asset">
-        <?php foreach (wallet_supported_assets() as $a): ?><option value="<?= e($a) ?>"><?= e($a) ?></option><?php endforeach; ?>
+        <?php foreach (wallet_supported_assets() as $a): ?><option value="<?= e($a) ?>" <?= $a === $preAsset ? 'selected' : '' ?>><?= e($a) ?></option><?php endforeach; ?>
       </select>
     </div>
     <div class="field"><label>Destination Wallet Address</label><input type="text" name="destination" placeholder="0x... or wallet address" required></div>

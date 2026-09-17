@@ -46,8 +46,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pageTitle = 'Swap';
 require __DIR__ . '/includes/dash_header.php';
+// Pre-fill from-asset from coin-detail.php
+$preFrom = strtoupper(trim($_GET['from'] ?? 'USD'));
+if (!in_array($preFrom, $assets, true)) $preFrom = 'USD';
 ?>
 <div class="panel" style="max-width:480px;margin:0 auto">
+  <?php if (!empty($_GET['from']) && $preFrom !== 'USD'): ?>
+    <div style="margin-bottom:16px">
+      <a href="coin-detail.php?coin=<?= urlencode($preFrom) ?>" class="cd-back-btn">&#8592; <?= e($preFrom) ?></a>
+    </div>
+  <?php endif; ?>
   <h3 style="margin-bottom:6px;text-align:center">Swap Assets</h3>
   <p style="text-align:center;font-size:14px;margin-bottom:20px">Available balance: <strong style="color:var(--navy)"><?= fmt_money((float) $user['balance']) ?></strong></p>
   <?php foreach ($errors as $err): ?>
@@ -58,7 +66,7 @@ require __DIR__ . '/includes/dash_header.php';
     <div class="form-row-2">
       <div class="field"><label>From</label>
         <select name="from_asset" id="fromAsset" onchange="updateQuote()">
-          <?php foreach ($assets as $a): ?><option value="<?= e($a) ?>" <?= $a === 'USD' ? 'selected' : '' ?>><?= e($a) ?></option><?php endforeach; ?>
+          <?php foreach ($assets as $a): ?><option value="<?= e($a) ?>" <?= $a === $preFrom ? 'selected' : '' ?>><?= e($a) ?></option><?php endforeach; ?>
         </select>
       </div>
       <div class="field"><label>To</label>

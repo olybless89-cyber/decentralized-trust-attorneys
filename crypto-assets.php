@@ -70,7 +70,7 @@ require __DIR__ . '/includes/dash_header.php';
 <!-- ── Asset list ── -->
 <div class="ca-asset-list">
   <?php foreach ($assets as [$ticker, $name, $network, $logo]): ?>
-  <div class="ca-asset-row">
+  <a href="coin-detail.php?coin=<?= urlencode($ticker) ?>" class="ca-asset-row">
     <!-- Left: icon + name -->
     <div class="ca-asset-left">
       <div class="ca-asset-icon">
@@ -83,12 +83,13 @@ require __DIR__ . '/includes/dash_header.php';
         <div class="ca-asset-sub">Last synced: <?= e($syncedAt) ?></div>
       </div>
     </div>
-    <!-- Right: balance -->
+    <!-- Right: balance + chevron -->
     <div class="ca-asset-right">
       <div class="ca-asset-balance"><?= fmt_money(asset_balance_for_user($user['id'], $ticker)) ?></div>
       <div class="ca-asset-ticker"><?= e($name) ?></div>
     </div>
-  </div>
+    <span class="ca-row-chevron">&#8250;</span>
+  </a>
   <?php endforeach; ?>
 </div>
 
