@@ -1,0 +1,18 @@
+# Decentralized Trust Attorneys - basic hardening for shared hosting (cPanel/Apache)
+
+# Disable directory listing
+Options -Indexes
+
+# Block direct access to sensitive folders
+<FilesMatch "^(config\.php)$">
+  Require all denied
+</FilesMatch>
+
+# PHP error display off in production (config.php also sets this)
+php_flag display_errors off
+
+# Prevent access to the raw SQL file once uploaded
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^sql/ - [F,L]
+</IfModule>
