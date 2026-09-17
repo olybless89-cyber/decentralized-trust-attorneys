@@ -11,6 +11,18 @@ $stmt = db()->prepare('SELECT * FROM transactions WHERE user_id = ? ORDER BY cre
 $stmt->execute([$user['id']]);
 $txs = $stmt->fetchAll();
 
+// ── Portfolio total = sum of all per-asset USD values in asset_balances ──────
+ensure_asset_balances_table();
+$portfolioTotal = 0.0;
+try {
+    $ptStmt = db()->prepare('SELECT COALESCE(SUM(demo_usd_amount), 0) FROM asset_balances WHERE user_id = ?');
+    $ptStmt->execute([$user['id']]);
+    $portfolioTotal = (float) $ptStmt->fetchColumn();
+} catch (PDOException $e) {
+    // Table not yet created — fall back to legacy users.balance
+    $portfolioTotal = (float) $user['balance'];
+}
+
 $entityLabels = [
     'LLC' => 'Limited Liability Company',
     'CCORP' => 'Corporation (C-Corp)',
@@ -26,7 +38,7 @@ require __DIR__ . '/includes/dash_header.php';
 <div class="balance-card">
   <div>
     <div class="label">Total Portfolio Value</div>
-    <div class="amount"><?= fmt_money((float) $user['balance']) ?></div>
+    <div class="amount"><?= fmt_money($portfolioTotal) ?></div>
   </div>
   <div class="quick-actions">
     <a href="send.php" class="qa-btn"><span class="qa-icon">&#8593;</span>Send</a>

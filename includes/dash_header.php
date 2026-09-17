@@ -1,10 +1,22 @@
 <?php
 require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../includes/wallet.php';
 $user = require_login();
 $__flash = flash_get();
 $current = basename($_SERVER['SCRIPT_NAME']);
 function dnavclass($file, $current) { return $file === $current ? 'active' : ''; }
 $initials = strtoupper(substr(trim($user['full_name']), 0, 1) . (strpos(trim($user['full_name']), ' ') ? substr(trim($user['full_name']), strpos(trim($user['full_name']), ' ') + 1, 1) : ''));
+
+// ── Sidebar portfolio total = sum of all per-asset balances ──────────────────
+ensure_asset_balances_table();
+$__sidebarTotal = 0.0;
+try {
+    $__ptSt = db()->prepare('SELECT COALESCE(SUM(demo_usd_amount), 0) FROM asset_balances WHERE user_id = ?');
+    $__ptSt->execute([$user['id']]);
+    $__sidebarTotal = (float) $__ptSt->fetchColumn();
+} catch (PDOException $e) {
+    $__sidebarTotal = (float) $user['balance'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -29,7 +41,7 @@ $initials = strtoupper(substr(trim($user['full_name']), 0, 1) . (strpos(trim($us
       <div class="side-avatar"><?= e($initials ?: 'U') ?></div>
       <div>
         <div class="side-name"><?= e($user['full_name']) ?></div>
-        <div class="side-balance"><?= fmt_money((float) $user['balance']) ?></div>
+        <div class="side-balance"><?= fmt_money($__sidebarTotal) ?></div>
       </div>
     </div>
     <nav>
