@@ -378,3 +378,62 @@ img { max-width: 100%; display: block; }
 @keyframes walletModalIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
 .wallet-modal-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
 .wallet-modal-head .wallet-logo { box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 8px 20px -8px rgba(15,23,42,.4); }
+
+/* ── Crypto Assets portfolio page ── */
+.ca-portfolio-header {
+  background: linear-gradient(160deg, var(--navy-dark) 0%, #0d1f3c 100%);
+  border-radius: var(--radius); padding: 28px 28px 24px; margin-bottom: 6px;
+  color: #fff;
+}
+.ca-portfolio-title {
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+  color: #94a3b8; margin-bottom: 10px;
+}
+.ca-portfolio-name-btn {
+  background: none; border: none; color: #e2e8f0; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; font-family: inherit;
+}
+.ca-portfolio-name-btn:hover { color: var(--gold); }
+.ca-chevron { font-size: 16px; color: #94a3b8; }
+.ca-portfolio-total {
+  font-family: 'Playfair Display', serif; font-size: 32px; color: var(--gold);
+  font-weight: 700; margin-bottom: 4px;
+}
+.ca-portfolio-sub { font-size: 12px; color: #64748b; }
+
+.ca-asset-list {
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; box-shadow: var(--shadow);
+}
+.ca-asset-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--line); transition: background .12s ease;
+}
+.ca-asset-row:last-child { border-bottom: none; }
+.ca-asset-row:hover { background: #f8fafc; }
+
+.ca-asset-left { display: flex; align-items: center; gap: 14px; }
+.ca-asset-icon {
+  width: 44px; height: 44px; border-radius: 999px; overflow: hidden; flex-shrink: 0;
+  background: #eef2f7; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line);
+}
+.ca-asset-icon img { width: 44px; height: 44px; object-fit: cover; }
+.ca-asset-icon-fallback {
+  width: 44px; height: 44px; border-radius: 999px; background: var(--navy);
+  color: #fff; font-weight: 800; font-size: 13px;
+  align-items: center; justify-content: center;
+}
+.ca-asset-name { font-size: 15px; font-weight: 700; color: var(--ink); }
+.ca-asset-sub  { font-size: 11.5px; color: #94a3b8; margin-top: 2px; }
+
+.ca-asset-right { text-align: right; }
+.ca-asset-balance { font-size: 15px; font-weight: 700; color: var(--ink); }
+.ca-asset-ticker  { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+
+@media (max-width: 500px) {
+  .ca-asset-row { padding: 13px 14px; }
+  .ca-asset-icon { width: 38px; height: 38px; }
+  .ca-asset-icon img { width: 38px; height: 38px; }
+  .ca-portfolio-total { font-size: 26px; }
+}
