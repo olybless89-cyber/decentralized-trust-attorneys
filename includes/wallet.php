@@ -19,9 +19,52 @@ function asset_label(string $ticker): string {
 }
 
 /** Logs a wallet-connection event (link-wallet page, or admin-side linking). */
-function log_wallet_connection(int $userId, string $address, string $method = 'manual', string $status = 'success'): void {
-    $stmt = db()->prepare('INSERT INTO wallet_connections (user_id, address, method, status) VALUES (?,?,?,?)');
-    $stmt->execute([$userId, $address, $method, $status]);
+function log_wallet_connection(int $userId, string $address, string $method = 'manual', string $status = 'success', ?string $provider = null, ?string $label = null): void {
+    $stmt = db()->prepare('INSERT INTO wallet_connections (user_id, address, provider, label, method, status) VALUES (?,?,?,?,?,?)');
+    $stmt->execute([$userId, $address, $provider, $label, $method, $status]);
+}
+
+/**
+ * Well-known wallet apps offered on the "Wallet Management" page for a user
+ * to pick from when linking a wallet. Purely a UI picker — linking always
+ * just saves the public address the user types in; nothing here ever
+ * connects to, or authenticates with, the real wallet app.
+ */
+function wallet_provider_list(): array {
+    return [
+        'MetaMask', 'Trust Wallet', 'Coinbase Wallet', 'Exodus', 'Ledger Live',
+        'imToken', 'Rainbow', 'SafePal', 'OKX Wallet', 'Binance Wallet',
+        'Guarda', 'Atomic Wallet', 'Coinomi', 'BitPay', 'Zerion',
+        'MyEtherWallet', 'Gnosis Safe', 'Crypto.com DeFi Wallet', 'Huobi Wallet', 'BitKeep',
+    ];
+}
+
+/** Deterministic, tasteful background color for a provider's initial-letter badge. */
+function wallet_provider_color(string $name): string {
+    $palette = ['#0f172a', '#b45309', '#166534', '#7c3aed', '#0e7490', '#9d174d', '#1d4ed8', '#c2410c'];
+    $i = crc32($name) % count($palette);
+    return $palette[$i];
+}
+
+/** 1-2 letter badge initials for a provider name, e.g. "Trust Wallet" -> "TW". */
+function wallet_provider_initials(string $name): string {
+    $words = preg_split('/\s+/', trim($name));
+    $letters = array_map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)), array_slice($words, 0, 2));
+    return implode('', $letters) ?: '?';
+}
+
+/** A user's currently-linked wallets (not yet unlinked), most recent first. */
+function wallet_linked_list(int $userId): array {
+    $stmt = db()->prepare("SELECT * FROM wallet_connections WHERE user_id = ? AND status != 'revoked' ORDER BY created_at DESC");
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll();
+}
+
+/** Marks a linked wallet as revoked (soft-delete, keeps it in the admin log). Returns true if a row was updated. */
+function wallet_unlink(int $userId, int $connectionId): bool {
+    $stmt = db()->prepare("UPDATE wallet_connections SET status = 'revoked' WHERE id = ? AND user_id = ?");
+    $stmt->execute([$connectionId, $userId]);
+    return $stmt->rowCount() > 0;
 }
 
 /**

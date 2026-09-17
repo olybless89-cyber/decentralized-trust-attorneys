@@ -325,3 +325,25 @@ img { max-width: 100%; display: block; }
 }
 .more-item:last-child { border-bottom: none; }
 .more-item span { font-size: 17px; width: 22px; text-align: center; }
+
+/* Wallet Management — provider grid + link modal */
+.provider-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;
+}
+.provider-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 10px; cursor: pointer;
+  background: #fff; transition: border-color .15s ease, box-shadow .15s ease;
+  font-size: 13px; font-weight: 600; color: var(--ink);
+}
+.provider-card:hover { border-color: var(--navy); box-shadow: var(--shadow); }
+.provider-card .avatar { width: 40px; height: 40px; font-size: 14px; }
+
+.wallet-modal-overlay {
+  position: fixed; inset: 0; background: rgba(2, 6, 23, .55); z-index: 100;
+  align-items: center; justify-content: center; padding: 20px;
+}
+.wallet-modal {
+  background: #fff; border-radius: var(--radius); padding: 26px; width: 100%; max-width: 420px;
+  box-shadow: var(--shadow-lg);
+}

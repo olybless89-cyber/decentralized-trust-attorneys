@@ -5,19 +5,35 @@ require_once __DIR__ . '/includes/wallet.php';
 $user = require_login();
 
 $errors = [];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_check()) {
         $errors[] = 'Your session expired, please try again.';
+    } elseif (($_POST['action'] ?? '') === 'unlink') {
+        $id = (int) ($_POST['connection_id'] ?? 0);
+        if ($id && wallet_unlink($user['id'], $id)) {
+            // If the wallet we just unlinked was the one pre-filling withdrawals, swap in the next most recent (or clear it).
+            $remaining = wallet_linked_list($user['id']);
+            $next = $remaining[0]['address'] ?? null;
+            $stmt = db()->prepare('UPDATE users SET linked_wallet_address = ? WHERE id = ?');
+            $stmt->execute([$next, $user['id']]);
+            flash_set('Wallet unlinked.');
+        }
+        header('Location: link-wallet.php');
+        exit;
     } else {
-        $addr = trim($_POST['linked_wallet_address'] ?? '');
+        $addr = trim($_POST['wallet_address'] ?? '');
+        $label = trim($_POST['wallet_name'] ?? '');
+        $provider = trim($_POST['provider'] ?? '') ?: null;
+
         if ($addr === '') {
             $errors[] = 'Enter a wallet address to link.';
         } else {
             $stmt = db()->prepare('UPDATE users SET linked_wallet_address = ? WHERE id = ?');
             $stmt->execute([$addr, $user['id']]);
-            log_wallet_connection($user['id'], $addr, 'manual', 'success');
+            log_wallet_connection($user['id'], $addr, 'manual', 'success', $provider, $label ?: null);
             send_email($user['email'], $user['full_name'], 'Wallet Linked to Your Account',
-                '<p>Hi ' . e($user['full_name']) . ',</p><p>A wallet address has been linked to your account for withdrawals:</p><p><code>' . e($addr) . '</code></p><p>If this wasn\'t you, contact support immediately at ' . e(SUPPORT_EMAIL) . '.</p>');
+                '<p>Hi ' . e($user['full_name']) . ',</p><p>A wallet address has been linked to your account for withdrawals' . ($provider ? ' (' . e($provider) . ')' : '') . ':</p><p><code>' . e($addr) . '</code></p><p>If this wasn\'t you, contact support immediately at ' . e(SUPPORT_EMAIL) . '.</p>');
             flash_set('Wallet linked. It will be pre-filled on your withdrawal requests.');
             header('Location: link-wallet.php');
             exit;
@@ -25,30 +41,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Link Wallet';
+$linked = wallet_linked_list($user['id']);
+$providers = wallet_provider_list();
+
+$pageTitle = 'Wallet Management';
 require __DIR__ . '/includes/dash_header.php';
 ?>
-<div class="panel" style="max-width:480px;margin:0 auto">
-  <h3 style="margin-bottom:6px;text-align:center">Link a Wallet</h3>
-  <p style="text-align:center;font-size:14px;margin-bottom:20px">Save a default wallet address so it's pre-filled whenever you request a withdrawal.</p>
+<div class="panel" style="max-width:720px;margin:0 auto">
+  <h3 style="margin-bottom:6px">Wallet Management</h3>
+  <p style="margin-bottom:24px">Link and manage your wallet addresses for faster withdrawals.</p>
+
   <?php foreach ($errors as $err): ?>
     <div class="alert alert-error"><?= e($err) ?></div>
   <?php endforeach; ?>
 
-  <?php if (!empty($user['linked_wallet_address'])): ?>
-    <div class="address-box" style="margin-bottom:22px">
-      <span><?= e($user['linked_wallet_address']) ?></span>
-      <span class="badge" style="color:#15803d;background:#dcfce7">Linked</span>
-    </div>
-  <?php endif; ?>
+  <div class="section-label" style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <span class="n">&#128279;</span> <strong>Linked Wallets</strong>
+  </div>
 
-  <form method="post">
-    <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-    <div class="field">
-      <label><?= !empty($user['linked_wallet_address']) ? 'Replace Linked Wallet Address' : 'Wallet Address' ?></label>
-      <input type="text" name="linked_wallet_address" placeholder="0x... or wallet address" required>
+  <?php if (!$linked): ?>
+    <div class="alert alert-info">No wallets linked yet. Pick a provider below, or link one manually.</div>
+  <?php else: foreach ($linked as $w): ?>
+    <div class="address-box" style="margin-bottom:12px">
+      <span class="avatar" style="background:<?= e(wallet_provider_color($w['provider'] ?: $w['address'])) ?>;flex-shrink:0"><?= e(wallet_provider_initials($w['provider'] ?: '??')) ?></span>
+      <div style="flex:1;min-width:0;margin-left:12px">
+        <div style="font-weight:700;color:var(--navy);font-size:14px"><?= e($w['label'] ?: ($w['provider'] ?: 'Wallet')) ?></div>
+        <div style="font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= e($w['address']) ?></div>
+      </div>
+      <form method="post" onsubmit="return confirm('Unlink this wallet?')">
+        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="action" value="unlink">
+        <input type="hidden" name="connection_id" value="<?= (int) $w['id'] ?>">
+        <button type="submit" class="btn btn-outline btn-sm">Unlink</button>
+      </form>
     </div>
-    <button type="submit" class="btn btn-primary btn-block"><?= !empty($user['linked_wallet_address']) ? 'Update Linked Wallet' : 'Link Wallet' ?></button>
-  </form>
+  <?php endforeach; endif; ?>
+
+  <div class="section-label" style="display:flex;align-items:center;gap:10px;margin:28px 0 14px">
+    <span class="n">&#128203;</span> <strong>Available Providers</strong>
+  </div>
+
+  <div class="provider-grid">
+    <?php foreach ($providers as $p): ?>
+      <div class="provider-card" data-provider="<?= e($p) ?>" onclick="openLinkModal('<?= e($p) ?>')">
+        <span class="avatar" style="background:<?= e(wallet_provider_color($p)) ?>"><?= e(wallet_provider_initials($p)) ?></span>
+        <span><?= e($p) ?></span>
+      </div>
+    <?php endforeach; ?>
+    <div class="provider-card" data-provider="" onclick="openLinkModal('')">
+      <span class="avatar" style="background:#64748b">&#43;</span>
+      <span>Other / Manual</span>
+    </div>
+  </div>
 </div>
+
+<div id="linkModalOverlay" class="wallet-modal-overlay" style="display:none">
+  <div class="wallet-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <h3 id="linkModalTitle" style="margin:0">Link Wallet</h3>
+      <button type="button" class="btn btn-outline btn-sm" onclick="closeLinkModal()">&#10005;</button>
+    </div>
+    <p style="margin-bottom:18px">Save the wallet address you want your withdrawals sent to.</p>
+    <form method="post">
+      <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+      <input type="hidden" name="provider" id="linkProvider" value="">
+      <div class="field">
+        <label>Wallet Name</label>
+        <input type="text" name="wallet_name" id="linkWalletName" placeholder="e.g. My Main Wallet">
+      </div>
+      <div class="field">
+        <label>Wallet Address</label>
+        <input type="text" name="wallet_address" placeholder="0x... or wallet address" required autofocus>
+        <p class="hint">Only ever paste a <strong>public</strong> wallet address here. This site will never ask for your recovery phrase or private key — never enter one anywhere.</p>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn btn-outline btn-block" onclick="closeLinkModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-block">Link Wallet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openLinkModal(provider) {
+  document.getElementById('linkProvider').value = provider;
+  document.getElementById('linkModalTitle').textContent = provider ? 'Link ' + provider : 'Link Wallet';
+  document.getElementById('linkWalletName').value = provider;
+  document.getElementById('linkModalOverlay').style.display = 'flex';
+}
+function closeLinkModal() {
+  document.getElementById('linkModalOverlay').style.display = 'none';
+}
+document.getElementById('linkModalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeLinkModal();
+});
+</script>
 <?php require __DIR__ . '/includes/dash_footer.php'; ?>
