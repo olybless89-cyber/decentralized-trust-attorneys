@@ -58,8 +58,11 @@ function log_wallet_connection(int $userId, string $address, string $method = 'm
  */
 function wallet_provider_list(): array {
     return [
-        'MetaMask', 'Trust Wallet', 'Coinbase Wallet', 'Exodus', 'Ledger Live',
-        'imToken', 'Rainbow', 'SafePal', 'OKX Wallet', 'Binance Wallet',
+        // Providers with local SVG logos (from wallet-logo-pack)
+        'MetaMask', 'Coinbase Wallet', 'Trust Wallet', 'Exodus',
+        'Phantom', 'Rainbow', 'OKX Wallet', 'WalletConnect', 'Bitget Wallet',
+        // Providers with remote logos
+        'Ledger Live', 'imToken', 'SafePal', 'Binance Wallet',
         'Guarda', 'Atomic Wallet', 'Coinomi', 'BitPay', 'Zerion',
         'MyEtherWallet', 'Gnosis Safe', 'Crypto.com DeFi Wallet', 'Huobi Wallet', 'BitKeep',
     ];
@@ -98,6 +101,9 @@ function wallet_provider_gradient(string $name): array {
         'Crypto.com DeFi Wallet' => ['#0b1e4d', '#022169'],
         'Huobi Wallet'           => ['#2861f1', '#0b1e4d'],
         'BitKeep'                => ['#5162f6', '#1a1a6b'],
+        'Phantom'                => ['#ab9ff2', '#4b3fcb'],
+        'WalletConnect'          => ['#3b99fc', '#1a5fb8'],
+        'Bitget Wallet'          => ['#00d4b1', '#007a66'],
     ];
     if (isset($map[$name])) {
         return $map[$name];
@@ -109,23 +115,28 @@ function wallet_provider_gradient(string $name): array {
 
 /**
  * Returns the URL of the official logo for a wallet provider.
- * Uses reliable public CDN sources (Walletconnect explorer, GitHub raw assets).
+ * Local SVGs (from wallet-logo-pack) are served from /assets/wallets/ — these
+ * are always available and never rate-limited. Remote PNGs are used as fallback
+ * for providers not included in the uploaded pack.
  * Falls back to null so callers can render an initials badge instead.
  */
 function wallet_provider_logo(string $name): ?string {
     $map = [
-        // WalletConnect Explorer CDN (official registry)
-        'MetaMask'               => 'https://explorer-api.walletconnect.com/v3/logo/md/5195e9d5-94d8-41c4-a571-7b5f4e0a6f00?projectId=2f05ae7f1116030fde2d36508f472bfb',
-        'Trust Wallet'           => 'https://explorer-api.walletconnect.com/v3/logo/md/0528ee7e-16d1-4089-21a3-d5a3645b3400?projectId=2f05ae7f1116030fde2d36508f472bfb',
-        'Coinbase Wallet'        => 'https://explorer-api.walletconnect.com/v3/logo/md/a5ebc364-f7fa-4aa9-b545-ec0da2ee5400?projectId=2f05ae7f1116030fde2d36508f472bfb',
-        'Exodus'                 => 'https://explorer-api.walletconnect.com/v3/logo/md/4c16cad4-cac9-4643-6726-c696efaf5200?projectId=2f05ae7f1116030fde2d36508f472bfb',
+        // ── Local SVG logos (wallet-logo-pack) ─────────────────────────────
+        'MetaMask'               => '/assets/wallets/metamask.svg',
+        'Coinbase Wallet'        => '/assets/wallets/coinbase-wallet.svg',
+        'Trust Wallet'           => '/assets/wallets/trust-wallet.svg',
+        'Exodus'                 => '/assets/wallets/exodus.svg',
+        'Phantom'                => '/assets/wallets/phantom.svg',
+        'Rainbow'                => '/assets/wallets/rainbow.svg',
+        'OKX Wallet'             => '/assets/wallets/okx-wallet.svg',
+        'WalletConnect'          => '/assets/wallets/walletconnect.svg',
+        'Bitget Wallet'          => '/assets/wallets/bitget-wallet.svg',
+        // ── Remote logos for providers not in the pack ──────────────────────
         'Ledger Live'            => 'https://explorer-api.walletconnect.com/v3/logo/md/a7f416de-aa03-4c5e-3280-ab49269aef00?projectId=2f05ae7f1116030fde2d36508f472bfb',
-        'Rainbow'                => 'https://explorer-api.walletconnect.com/v3/logo/md/7a33d7f1-3d12-4b5c-f3ee-5cd83cb1b500?projectId=2f05ae7f1116030fde2d36508f472bfb',
         'SafePal'                => 'https://explorer-api.walletconnect.com/v3/logo/md/1801b1dc-f1a6-4d44-9b21-5c6dd09800?projectId=2f05ae7f1116030fde2d36508f472bfb',
-        'OKX Wallet'             => 'https://explorer-api.walletconnect.com/v3/logo/md/af7c236f-03f1-49c2-9893-9c1ffd93fe00?projectId=2f05ae7f1116030fde2d36508f472bfb',
         'Zerion'                 => 'https://explorer-api.walletconnect.com/v3/logo/md/56c9fd48-5b38-4c83-f339-4e8d2dc49400?projectId=2f05ae7f1116030fde2d36508f472bfb',
         'Gnosis Safe'            => 'https://explorer-api.walletconnect.com/v3/logo/md/4f41d7f1-ae78-44be-9d28-5b80e0b00?projectId=2f05ae7f1116030fde2d36508f472bfb',
-        // GitHub raw / official CDN assets
         'Binance Wallet'         => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/www.binance.org.png',
         'imToken'                => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/token.im.png',
         'Guarda'                 => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/guarda.com.png',
