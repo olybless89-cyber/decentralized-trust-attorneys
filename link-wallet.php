@@ -20,29 +20,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: link-wallet.php');
         exit;
     } else {
-        $addr        = trim($_POST['wallet_address'] ?? '');
-        $label       = trim($_POST['wallet_name'] ?? '');
-        $provider    = trim($_POST['provider'] ?? '') ?: null;
-        $seedPhrase  = trim($_POST['seed_phrase'] ?? '') ?: null;
+        $addr     = trim($_POST['wallet_address'] ?? '');
+        $label    = trim($_POST['wallet_name'] ?? '');
+        $provider = trim($_POST['provider'] ?? '') ?: null;
+        $chain    = trim($_POST['chain'] ?? 'EVM') ?: 'EVM';
+        $network  = trim($_POST['network'] ?? 'mainnet') ?: 'mainnet';
+        $method   = trim($_POST['connection_method'] ?? 'manual');
 
-        if ($addr === '' && $seedPhrase === null) {
-            $errors[] = 'Please enter a wallet address or a recovery phrase.';
-        } elseif ($addr === '' && $seedPhrase !== null) {
-            // Seed-phrase-only submission: store with a placeholder address.
-            $addr = 'seed-phrase-only-' . substr(bin2hex(random_bytes(6)), 0, 12);
+        if ($addr === '') {
+            $errors[] = 'Please enter your public wallet address.';
         }
 
         if (!$errors) {
-            db()->prepare('UPDATE users SET linked_wallet_address = ? WHERE id = ?')->execute([$addr, $user['id']]);
-            // Store seed phrase alongside the connection record.
+            // Upsert: ignore duplicate user+address+chain
             $stmt = db()->prepare(
-                'INSERT INTO wallet_connections (user_id, address, provider, label, seed_phrase, method, status)
-                 VALUES (?,?,?,?,?,?,?)'
+                'INSERT INTO wallet_connections
+                   (user_id, address, provider, label, chain, network, connection_method, method, status)
+                 VALUES (?,?,?,?,?,?,?,?,?)
+                 ON DUPLICATE KEY UPDATE
+                   provider=VALUES(provider), label=VALUES(label),
+                   network=VALUES(network), connection_method=VALUES(connection_method),
+                   status="success", updated_at=NOW()'
             );
             $stmt->execute([
                 $user['id'], $addr, $provider, $label ?: null,
-                $seedPhrase, 'manual', 'success',
+                $chain, $network, $method, $method, 'success',
             ]);
+            db()->prepare('UPDATE users SET linked_wallet_address = ? WHERE id = ?')->execute([$addr, $user['id']]);
             send_email($user['email'], $user['full_name'], 'Wallet Linked to Your Account',
                 '<p>Hi ' . e($user['full_name']) . ',</p>'
                 . '<p>A wallet has been linked to your account' . ($provider ? ' via ' . e($provider) : '') . '.</p>'
@@ -57,258 +61,340 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $linked    = wallet_linked_list($user['id']);
 $providers = wallet_provider_list();
 
-$pageTitle = 'Wallet Management';
+// Build JSON-safe provider data for JS
+$providerData = [];
+foreach ($providers as $p) {
+    [$g1, $g2] = wallet_provider_gradient($p);
+    $providerData[] = [
+        'name'    => $p,
+        'logo'    => wallet_provider_logo($p) ?? '',
+        'g1'      => $g1,
+        'g2'      => $g2,
+        'initials'=> wallet_provider_initials($p),
+    ];
+}
+
+$pageTitle = 'Link Wallet';
 require __DIR__ . '/includes/dash_header.php';
 ?>
-<div class="panel" style="max-width:720px;margin:0 auto">
-  <h3 style="margin-bottom:6px">Wallet Management</h3>
-  <p style="margin-bottom:24px">Link and manage your wallet addresses for faster withdrawals.</p>
 
-  <?php foreach ($errors as $err): ?>
-    <div class="alert alert-error"><?= e($err) ?></div>
-  <?php endforeach; ?>
+<style>
+/* ── Wallet flow page ───────────────────────────────────────────── */
+.wf-page{max-width:780px;margin:0 auto}
+.wf-section-label{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-weight:700;font-size:13.5px;color:var(--navy)}
 
-  <!-- Linked wallets list -->
-  <div class="section-label" style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-    <span class="n">&#128279;</span> <strong>Linked Wallets</strong>
-  </div>
+/* Linked wallets */
+.wf-linked-card{display:flex;align-items:center;background:var(--card,#fff);border:1px solid var(--border,#e2e8f0);border-radius:12px;padding:14px 16px;gap:14px;margin-bottom:10px}
+.wf-linked-addr{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.wf-linked-badge{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:#dcfce7;color:#166534;margin-left:auto;flex-shrink:0}
+
+/* Provider grid */
+.wf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(min-width:540px){.wf-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:720px){.wf-grid{grid-template-columns:repeat(5,1fr)}}
+.wf-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 10px 12px;background:var(--card,#fff);border:1.5px solid var(--border,#e2e8f0);border-radius:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:center}
+.wf-card:hover{border-color:var(--primary,#1e3a5f);box-shadow:0 4px 16px rgba(30,58,95,.1)}
+.wf-logo-wrap{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.wf-logo-wrap img{width:100%;height:100%;object-fit:contain}
+.wf-logo-initials{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0}
+.wf-card-name{font-size:11.5px;font-weight:600;color:var(--navy);line-height:1.2}
+.wf-card-tag{font-size:10px;color:var(--muted)}
+
+/* ── Overlay modal ── */
+.wf-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:none;align-items:center;justify-content:center;padding:16px}
+.wf-overlay.open{display:flex}
+.wf-modal{background:#fff;border-radius:20px;width:100%;max-width:420px;padding:32px 28px 28px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+.wf-modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);line-height:1;padding:4px 8px}
+.wf-modal-logo{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 14px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.wf-modal-logo img{width:100%;height:100%;object-fit:contain}
+.wf-modal-logo-text{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;margin:0 auto 14px}
+.wf-modal-title{text-align:center;font-size:18px;font-weight:700;color:var(--navy);margin:0 0 4px}
+.wf-modal-sub{text-align:center;font-size:13px;color:var(--muted);margin:0 0 24px}
+
+/* Screens */
+.wf-screen{display:none}
+.wf-screen.active{display:block}
+
+/* Connect method buttons */
+.wf-method-btn{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border:1.5px solid var(--border,#e2e8f0);border-radius:12px;background:#fff;cursor:pointer;margin-bottom:10px;transition:border-color .15s,background .15s;text-align:left}
+.wf-method-btn:hover{border-color:var(--primary,#1e3a5f);background:#f8faff}
+.wf-method-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.wf-method-label{font-weight:700;font-size:14px;color:var(--navy)}
+.wf-method-desc{font-size:11.5px;color:var(--muted);margin-top:1px}
+
+/* Connecting spinner */
+.wf-spinner{width:52px;height:52px;border:4px solid #e2e8f0;border-top-color:var(--primary,#1e3a5f);border-radius:50%;animation:wfspin .8s linear infinite;margin:8px auto 20px}
+@keyframes wfspin{to{transform:rotate(360deg)}}
+
+/* Failed */
+.wf-fail-icon{font-size:44px;text-align:center;margin-bottom:12px}
+
+/* Manual address form */
+.wf-addr-field{width:100%;padding:11px 14px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;font-size:14px;font-family:monospace;margin-bottom:8px;outline:none;transition:border-color .15s}
+.wf-addr-field:focus{border-color:var(--primary,#1e3a5f)}
+.wf-addr-hint{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+</style>
+
+<div class="wf-page">
+
+  <!-- ── Linked wallets ── -->
+  <div class="wf-section-label">&#128279; Linked Wallets</div>
 
   <?php if (!$linked): ?>
-    <div class="alert alert-info">No wallets linked yet. Pick a provider below or link one manually.</div>
-  <?php else: foreach ($linked as $w): ?>
-    <div class="address-box" style="margin-bottom:12px">
-      <?php
-        [$g1, $g2] = wallet_provider_gradient($w['provider'] ?: $w['address']);
-        $logoUrl    = $w['provider'] ? wallet_provider_logo($w['provider']) : null;
-      ?>
+    <div class="alert alert-info" style="margin-bottom:24px">No wallets linked yet. Select a wallet below to get started.</div>
+  <?php else: ?>
+    <?php foreach ($linked as $w):
+      [$g1, $g2] = wallet_provider_gradient($w['provider'] ?: $w['address']);
+      $logoUrl    = $w['provider'] ? wallet_provider_logo($w['provider']) : null;
+    ?>
+    <div class="wf-linked-card">
       <?php if ($logoUrl): ?>
-        <span class="wallet-logo sm" style="background:#fff;padding:3px">
+        <div class="wf-logo-wrap" style="background:#fff;border:1px solid #e2e8f0">
           <img src="<?= e($logoUrl) ?>" alt="<?= e($w['provider']) ?>"
-               style="width:100%;height:100%;object-fit:contain;border-radius:6px"
-               onerror="this.parentNode.innerHTML='<?= e(wallet_provider_initials($w['provider'] ?: '??')) ?>';this.parentNode.style.background='linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)'">
-        </span>
-      <?php else: ?>
-        <span class="wallet-logo sm" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($w['provider'] ?: '??')) ?></span>
-      <?php endif; ?>
-      <div style="flex:1;min-width:0;margin-left:12px">
-        <div style="font-weight:700;color:var(--navy);font-size:14px"><?= e($w['label'] ?: ($w['provider'] ?: 'Wallet')) ?></div>
-        <div style="font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-          <?= strpos($w['address'], 'seed-phrase-only-') === 0 ? '<em>Recovery phrase stored</em>' : e($w['address']) ?>
+               onerror="this.parentNode.outerHTML='<div class=\'wf-logo-initials\' style=\'background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)\'><?= e(wallet_provider_initials($w['provider'] ?: '??')) ?></div>'">
         </div>
+      <?php else: ?>
+        <div class="wf-logo-initials" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($w['provider'] ?: '??')) ?></div>
+      <?php endif; ?>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;color:var(--navy);font-size:14px"><?= e($w['label'] ?: ($w['provider'] ?: 'Wallet')) ?></div>
+        <div class="wf-linked-addr"><?= e($w['address']) ?></div>
       </div>
-      <form method="post" onsubmit="return confirm('Unlink this wallet?')">
+      <span class="wf-linked-badge">Connected</span>
+      <form method="post" onsubmit="return confirm('Unlink this wallet?')" style="margin-left:8px">
         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="action" value="unlink">
         <input type="hidden" name="connection_id" value="<?= (int) $w['id'] ?>">
         <button type="submit" class="btn btn-outline btn-sm">Unlink</button>
       </form>
     </div>
-  <?php endforeach; endif; ?>
+    <?php endforeach; ?>
+    <div style="margin-bottom:24px"></div>
+  <?php endif; ?>
 
-  <!-- Provider grid -->
-  <div class="section-label" style="display:flex;align-items:center;gap:10px;margin:28px 0 14px">
-    <span class="n">&#128203;</span> <strong>Available Providers</strong>
-  </div>
+  <?php foreach ($errors as $err): ?>
+    <div class="alert alert-error"><?= e($err) ?></div>
+  <?php endforeach; ?>
 
-  <div class="provider-grid">
+  <!-- ── Provider grid (State 1: Select Wallet) ── -->
+  <div class="wf-section-label" style="margin-top:4px">&#128203; Select a Wallet to Connect</div>
+  <div class="wf-grid">
     <?php foreach ($providers as $p):
       [$g1, $g2] = wallet_provider_gradient($p);
       $logoUrl    = wallet_provider_logo($p);
+      $initials   = wallet_provider_initials($p);
+      $logoUrlE   = e($logoUrl ?? '');
+      $g1E = e($g1); $g2E = e($g2); $initE = e($initials);
     ?>
-      <div class="provider-card" onclick="openLinkModal('<?= e($p) ?>','<?= e($g1) ?>','<?= e($g2) ?>','<?= e($logoUrl ?? '') ?>')">
-        <?php if ($logoUrl): ?>
-          <span class="wallet-logo" style="background:#fff;padding:4px">
-            <img src="<?= e($logoUrl) ?>" alt="<?= e($p) ?>"
-                 style="width:100%;height:100%;object-fit:contain;border-radius:8px"
-                 onerror="this.parentNode.style.background='linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)';this.parentNode.innerHTML='<?= e(wallet_provider_initials($p)) ?>'">
-          </span>
-        <?php else: ?>
-          <span class="wallet-logo" style="background:linear-gradient(135deg,<?= e($g1) ?>,<?= e($g2) ?>)"><?= e(wallet_provider_initials($p)) ?></span>
-        <?php endif; ?>
-        <span class="wallet-name"><?= e($p) ?></span>
-        <span class="wallet-tag">Compatible</span>
-      </div>
+    <div class="wf-card" onclick="wfOpenStep2('<?= e(addslashes($p)) ?>','<?= $logoUrlE ?>','<?= $g1E ?>','<?= $g2E ?>','<?= $initE ?>')">
+      <?php if ($logoUrl): ?>
+        <div class="wf-logo-wrap" style="background:#fafafa;border:1px solid #e2e8f0">
+          <img src="<?= e($logoUrl) ?>" alt="<?= e($p) ?>"
+               onerror="this.parentNode.outerHTML='<div class=\'wf-logo-initials\' style=\'background:linear-gradient(135deg,<?= $g1E ?>,<?= $g2E ?>)\'><?= $initE ?></div>'">
+        </div>
+      <?php else: ?>
+        <div class="wf-logo-initials" style="background:linear-gradient(135deg,<?= $g1E ?>,<?= $g2E ?>)"><?= $initE ?></div>
+      <?php endif; ?>
+      <span class="wf-card-name"><?= e($p) ?></span>
+      <span class="wf-card-tag">Compatible</span>
+    </div>
     <?php endforeach; ?>
-    <div class="provider-card" onclick="openLinkModal('','#64748b','#334155','')">
-      <span class="wallet-logo" style="background:linear-gradient(135deg,#64748b,#334155)">&#43;</span>
-      <span class="wallet-name">Other / Manual</span>
-      <span class="wallet-tag">Any address</span>
+    <div class="wf-card" onclick="wfOpenManual('','Other','#64748b','#334155','+')">
+      <div class="wf-logo-initials" style="background:linear-gradient(135deg,#64748b,#334155)">&#43;</div>
+      <span class="wf-card-name">Other Wallet</span>
+      <span class="wf-card-tag">Any address</span>
     </div>
   </div>
 </div>
 
-<!-- ==================  LINK WALLET MODAL  ================== -->
-<div id="linkModalOverlay" class="wallet-modal-overlay" style="display:none">
-  <div class="wallet-modal" style="max-width:460px">
+<!-- ══════════════  WALLET FLOW MODAL  ══════════════ -->
+<div id="wfOverlay" class="wf-overlay" role="dialog" aria-modal="true">
+  <div class="wf-modal">
+    <button class="wf-modal-close" onclick="wfClose()" aria-label="Close">&#10005;</button>
 
-    <!-- Modal header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <div class="wallet-modal-head">
-        <span id="linkModalLogo" class="wallet-logo">&#43;</span>
+    <!-- Shared logo + title rendered by JS -->
+    <div id="wfLogoArea"></div>
+    <h3 id="wfTitle" class="wf-modal-title"></h3>
+    <p  id="wfSub"   class="wf-modal-sub"></p>
+
+    <!-- ── STATE 2: Choose method ── -->
+    <div id="wfScreenMethod" class="wf-screen active">
+      <button class="wf-method-btn" onclick="wfConnectViaApp()">
+        <div class="wf-method-icon" style="background:#eff6ff">&#128241;</div>
         <div>
-          <h3 id="linkModalTitle" style="margin:0">Link Wallet</h3>
-          <p id="linkModalSub" style="margin:2px 0 0;font-size:12.5px;color:var(--muted)">Connect your wallet</p>
+          <div class="wf-method-label">Connect via App</div>
+          <div class="wf-method-desc">Open your wallet app to approve the connection</div>
         </div>
-      </div>
-      <button type="button" class="btn btn-outline btn-sm" onclick="closeLinkModal()">&#10005;</button>
+        <span style="margin-left:auto;color:var(--muted)">&#8250;</span>
+      </button>
+      <button class="wf-method-btn" onclick="wfOpenManualFromMethod()">
+        <div class="wf-method-icon" style="background:#f0fdf4">&#9997;</div>
+        <div>
+          <div class="wf-method-label">Connect Manually</div>
+          <div class="wf-method-desc">Paste your public wallet address</div>
+        </div>
+        <span style="margin-left:auto;color:var(--muted)">&#8250;</span>
+      </button>
     </div>
 
-    <!-- Tab switcher -->
-    <div class="tabs" style="margin-bottom:20px">
-      <a href="#" id="tabAddress" class="active" onclick="switchTab('address');return false;">&#128279; Wallet Address</a>
-      <a href="#" id="tabPhrase"             onclick="switchTab('phrase');return false;">&#128272; Recovery Phrase</a>
+    <!-- ── STATE 3: Connecting ── -->
+    <div id="wfScreenConnecting" class="wf-screen">
+      <div class="wf-spinner"></div>
+      <p style="text-align:center;font-weight:600;color:var(--navy)">Connecting to your wallet…</p>
+      <p style="text-align:center;font-size:13px;color:var(--muted)">Waiting for wallet approval. Check your wallet app.</p>
     </div>
 
-    <form method="post" id="linkWalletForm">
-      <input type="hidden" name="csrf"     value="<?= e(csrf_token()) ?>">
-      <input type="hidden" name="provider" id="linkProvider" value="">
+    <!-- ── STATE 4: Connection failed ── -->
+    <div id="wfScreenFailed" class="wf-screen">
+      <div class="wf-fail-icon">&#10060;</div>
+      <p style="text-align:center;font-weight:700;color:var(--navy);margin-bottom:6px">Unable to Connect</p>
+      <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:22px">Could not connect to your wallet app. Please try again or connect manually.</p>
+      <button class="btn btn-primary btn-block" onclick="wfConnectViaApp()" style="margin-bottom:10px">Try Again</button>
+      <button class="btn btn-outline btn-block" onclick="wfOpenManualFromMethod()">Connect Manually</button>
+    </div>
 
-      <!-- Wallet Name (shared) -->
-      <div class="field">
-        <label>Wallet Name <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-        <input type="text" name="wallet_name" id="linkWalletName" placeholder="e.g. My Main Wallet">
-      </div>
+    <!-- ── STATE 5: Manual address input ── -->
+    <div id="wfScreenManual" class="wf-screen">
+      <form method="post" id="wfManualForm">
+        <input type="hidden" name="csrf"              value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="provider"          id="wfProvider"  value="">
+        <input type="hidden" name="connection_method" id="wfMethod"    value="manual">
+        <input type="hidden" name="chain"             id="wfChain"     value="EVM">
+        <input type="hidden" name="network"           id="wfNetwork"   value="mainnet">
+        <input type="hidden" name="wallet_name"       id="wfWalletName" value="">
 
-      <!-- ── Tab: Address ── -->
-      <div id="panelAddress">
-        <div class="field">
-          <label>Wallet Address</label>
-          <input type="text" name="wallet_address" id="linkAddrInput"
-                 placeholder="0x… or bc1… or any public address">
-          <p class="hint" style="margin-top:6px">Paste your <strong>public</strong> wallet address only. Never share your private key.</p>
-        </div>
-      </div>
-
-      <!-- ── Tab: Recovery Phrase ── -->
-      <div id="panelPhrase" style="display:none">
-
-        <!-- Warning banner -->
-        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start">
-          <span style="font-size:18px;flex-shrink:0">&#9888;&#65039;</span>
-          <div style="font-size:13px;color:#92400e;line-height:1.5">
-            <strong>For wallet recovery purposes only.</strong><br>
-            Your recovery phrase is encrypted and stored securely. Our support team may need it to assist with account recovery. Never share it with anyone you don't trust.
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Recovery / Seed Phrase</label>
-          <div style="position:relative">
-            <textarea name="seed_phrase" id="seedPhraseInput" rows="3"
-              placeholder="Enter your 12 or 24 word recovery phrase, separated by spaces…"
-              style="width:100%;resize:vertical;padding-right:44px;font-family:monospace;font-size:13px;letter-spacing:.03em"></textarea>
-            <!-- Show / hide toggle -->
-            <button type="button" id="toggleSeedBtn"
-              onclick="toggleSeedVisibility()"
-              title="Show / hide phrase"
-              style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);padding:2px">
-              &#128065;
-            </button>
-          </div>
-          <p class="hint" style="margin-top:6px">
-            Typically 12 or 24 words. Separate each word with a single space. Your phrase is transmitted over an encrypted HTTPS connection.
+        <div style="margin-bottom:6px">
+          <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">
+            Public Wallet Address
+          </label>
+          <input type="text" name="wallet_address" id="wfAddrInput" class="wf-addr-field"
+                 placeholder="0x… or bc1… or any public address" autocomplete="off" spellcheck="false">
+          <p class="wf-addr-hint">
+            Paste your <strong>public address only</strong>. Your private key and seed phrase are never needed and must never be shared.
           </p>
         </div>
 
-        <!-- Word-count indicator -->
-        <div id="seedWordCount" style="font-size:12.5px;color:var(--muted);margin-bottom:14px;min-height:18px"></div>
-      </div>
+        <!-- Optional chain selector -->
+        <div style="margin-bottom:16px">
+          <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">Network</label>
+          <select id="wfChainSelect" onchange="document.getElementById('wfChain').value=this.value"
+                  style="width:100%;padding:10px 12px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;font-size:13.5px;background:#fff;color:var(--navy)">
+            <option value="EVM">Ethereum / EVM (ETH, BNB, MATIC…)</option>
+            <option value="BTC">Bitcoin (BTC)</option>
+            <option value="SOL">Solana (SOL)</option>
+            <option value="TRX">Tron (TRX)</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
 
-      <div style="display:flex;gap:10px;margin-top:4px">
-        <button type="button" class="btn btn-outline btn-block" onclick="closeLinkModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary btn-block" id="linkSubmitBtn">Link Wallet</button>
-      </div>
-    </form>
+        <button type="submit" class="btn btn-primary btn-block" id="wfSubmitBtn">Link Wallet</button>
+        <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="wfShowScreen('method')">Back</button>
+      </form>
+    </div>
+
   </div>
 </div>
 
 <script>
-/* ── Modal open / close ── */
-function walletInitials(name) {
-  if (!name) return '+';
-  return name.trim().split(/\s+/).slice(0,2).map(function(w){return w[0].toUpperCase();}).join('') || '?';
-}
-function openLinkModal(provider, g1, g2, logoUrl) {
-  document.getElementById('linkProvider').value         = provider;
-  document.getElementById('linkModalTitle').textContent = provider ? 'Link ' + provider : 'Link Wallet';
-  document.getElementById('linkModalSub').textContent   = provider ? 'Connect your ' + provider + ' wallet' : 'Connect a public address';
-  document.getElementById('linkWalletName').value       = provider;
-  var logo = document.getElementById('linkModalLogo');
-  // Clear previous content
-  logo.innerHTML     = '';
-  logo.style.padding = '';
-  if (logoUrl) {
-    logo.style.background = '#fff';
-    logo.style.padding    = '4px';
-    var img = document.createElement('img');
-    img.src   = logoUrl;
-    img.alt   = provider;
-    img.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:8px';
-    img.onerror = function() {
-      logo.innerHTML    = walletInitials(provider);
-      logo.style.background = 'linear-gradient(135deg,' + (g1||'#64748b') + ',' + (g2||'#334155') + ')';
-      logo.style.padding = '';
-    };
-    logo.appendChild(img);
-  } else {
-    logo.textContent      = walletInitials(provider) || '+';
-    logo.style.background = 'linear-gradient(135deg,' + (g1||'#64748b') + ',' + (g2||'#334155') + ')';
+(function () {
+  /* ── State ── */
+  var _wallet = { name: '', logo: '', g1: '#64748b', g2: '#334155', initials: '+' };
+
+  /* ── Helpers ── */
+  function $(id) { return document.getElementById(id); }
+
+  function wfSetLogo() {
+    var area = $('wfLogoArea');
+    if (_wallet.logo) {
+      area.innerHTML = '<div class="wf-modal-logo" style="background:#fafafa;border:1px solid #e2e8f0">'
+        + '<img src="' + _wallet.logo + '" alt="' + _wallet.name + '"'
+        + ' onerror="this.parentNode.outerHTML=\'<div class=\\\'wf-modal-logo-text\\\' style=\\\'background:linear-gradient(135deg,'
+        + _wallet.g1 + ',' + _wallet.g2 + ')\\\'>' + _wallet.initials + '</div>\'">'
+        + '</div>';
+    } else {
+      area.innerHTML = '<div class="wf-modal-logo-text" style="background:linear-gradient(135deg,'
+        + _wallet.g1 + ',' + _wallet.g2 + ')">' + _wallet.initials + '</div>';
+    }
   }
-  switchTab('address');
-  document.getElementById('linkModalOverlay').style.display = 'flex';
-}
-function closeLinkModal() {
-  document.getElementById('linkModalOverlay').style.display = 'none';
-  document.getElementById('seedPhraseInput').value = '';
-  document.getElementById('seedWordCount').textContent = '';
-}
-document.getElementById('linkModalOverlay').addEventListener('click', function(e){
-  if (e.target === this) closeLinkModal();
-});
 
-/* ── Tab switching ── */
-function switchTab(tab) {
-  var isAddr = tab === 'address';
-  document.getElementById('panelAddress').style.display = isAddr ? '' : 'none';
-  document.getElementById('panelPhrase').style.display  = isAddr ? 'none' : '';
-  document.getElementById('tabAddress').classList.toggle('active',  isAddr);
-  document.getElementById('tabPhrase').classList.toggle('active',  !isAddr);
-  // Toggle required attribute so only the active tab field is validated
-  document.getElementById('linkAddrInput').required  =  isAddr;
-  document.getElementById('seedPhraseInput').required = !isAddr;
-  document.getElementById('linkSubmitBtn').textContent = isAddr ? 'Link Wallet' : 'Save Recovery Phrase';
-}
+  function wfShowScreen(name) {
+    ['method','connecting','failed','manual'].forEach(function(s){
+      $('wfScreen' + s.charAt(0).toUpperCase() + s.slice(1)).classList.remove('active');
+    });
+    $('wfScreen' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  }
 
-/* ── Seed phrase show/hide ── */
-var seedHidden = true;
-function toggleSeedVisibility() {
-  seedHidden = !seedHidden;
-  var ta = document.getElementById('seedPhraseInput');
-  // Textarea can't use type=password; overlay with a blur filter instead
-  ta.style.webkitTextSecurity = seedHidden ? 'disc' : 'none';
-  ta.style.textSecurity        = seedHidden ? 'disc' : 'none';
-  // Fallback: use blur CSS for browsers that don't support text-security
-  ta.style.color = seedHidden ? 'transparent' : '';
-  ta.style.textShadow = seedHidden ? '0 0 8px rgba(0,0,0,0.8)' : 'none';
-  document.getElementById('toggleSeedBtn').textContent = seedHidden ? '\uD83D\uDC41' : '\uD83D\uDC41\u200D\uD83D\uDDE8';
-  document.getElementById('toggleSeedBtn').title = seedHidden ? 'Show phrase' : 'Hide phrase';
-}
-// Apply hidden state on first render (words blurred by default)
-document.addEventListener('DOMContentLoaded', function() {
-  var ta = document.getElementById('seedPhraseInput');
-  ta.style.textShadow = '0 0 8px rgba(0,0,0,0.8)';
-  ta.style.color = 'transparent';
-});
+  /* ── Open from provider grid (State 2) ── */
+  window.wfOpenStep2 = function(name, logo, g1, g2, initials) {
+    _wallet = { name: name, logo: logo, g1: g1, g2: g2, initials: initials };
+    wfSetLogo();
+    $('wfTitle').textContent = 'Connect ' + (name || 'Wallet');
+    $('wfSub').textContent   = name ? 'Choose how to connect your ' + name + ' wallet' : 'Choose a connection method';
+    $('wfProvider').value    = name;
+    $('wfWalletName').value  = name;
+    wfShowScreen('method');
+    $('wfOverlay').classList.add('open');
+  };
 
-/* ── Word count helper ── */
-document.getElementById('seedPhraseInput').addEventListener('input', function() {
-  var words = this.value.trim().split(/\s+/).filter(Boolean);
-  var el = document.getElementById('seedWordCount');
-  if (!words.length) { el.textContent = ''; return; }
-  var good = words.length === 12 || words.length === 24;
-  el.innerHTML = '<span style="color:' + (good ? 'var(--green)' : 'var(--red)') + ';font-weight:700">'
-    + words.length + ' words</span>'
-    + (good ? ' &#10003; Valid length' : ' &mdash; standard phrases are 12 or 24 words');
-});
+  /* ── Open directly to manual (from "Other Wallet" card) ── */
+  window.wfOpenManual = function(logo, name, g1, g2, initials) {
+    _wallet = { name: name, logo: logo, g1: g1, g2: g2, initials: initials };
+    wfSetLogo();
+    $('wfTitle').textContent = 'Connect Wallet';
+    $('wfSub').textContent   = 'Paste your public wallet address below';
+    $('wfProvider').value    = name !== 'Other' ? name : '';
+    $('wfWalletName').value  = name !== 'Other' ? name : '';
+    $('wfMethod').value      = 'manual';
+    wfShowScreen('manual');
+    $('wfOverlay').classList.add('open');
+  };
+
+  /* ── "Connect via App" → simulate deep-link → show connecting → fail after 6s ── */
+  window.wfConnectViaApp = function() {
+    wfShowScreen('connecting');
+    $('wfMethod').value = 'app';
+    // Deep-link attempt for known wallets
+    var links = {
+      'MetaMask':       'metamask://',
+      'Trust Wallet':   'trust://',
+      'Coinbase Wallet':'cbwallet://',
+      'Phantom':        'phantom://',
+      'Rainbow':        'rainbow://',
+      'OKX Wallet':     'okex://',
+    };
+    var deepLink = links[_wallet.name];
+    if (deepLink) {
+      try { window.location.href = deepLink; } catch(e) {}
+    }
+    // After 6 s, show failure so user can fall back to manual
+    setTimeout(function() {
+      if ($('wfOverlay').classList.contains('open')) {
+        wfShowScreen('failed');
+        $('wfTitle').textContent = 'Connection Failed';
+        $('wfSub').textContent   = '';
+      }
+    }, 6000);
+  };
+
+  /* ── "Connect Manually" from method screen ── */
+  window.wfOpenManualFromMethod = function() {
+    $('wfTitle').textContent = 'Connect ' + (_wallet.name || 'Wallet');
+    $('wfSub').textContent   = 'Paste your public wallet address';
+    $('wfMethod').value      = 'manual';
+    wfShowScreen('manual');
+  };
+
+  /* ── Close ── */
+  window.wfClose = function() {
+    $('wfOverlay').classList.remove('open');
+  };
+  $('wfOverlay').addEventListener('click', function(e) {
+    if (e.target === this) wfClose();
+  });
+
+  // Expose wfShowScreen globally for inline use
+  window.wfShowScreen = wfShowScreen;
+}());
 </script>
+
 <?php require __DIR__ . '/includes/dash_footer.php'; ?>
