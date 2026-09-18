@@ -136,13 +136,12 @@ require __DIR__ . '/includes/dash_header.php';
   </a>
 </div>
 
-<!-- ── Add Demo Balance form ── -->
+<!-- ── Add Balance form ── -->
 <div class="cd-add-balance-panel" id="cdAddBalancePanel">
-  <div class="cd-add-balance-title">Add Demo Balance</div>
   <div class="cd-add-balance-sub">
     Current price: <strong id="cdPriceForCalc">loading…</strong><br>
     <?php if ($existingCrypto > 0): ?>
-      Existing balance: <span id="cdExistingHint"><?= rtrim(rtrim(number_format($existingCrypto, 10), '0'), '.') ?> <?= e($ticker) ?> (<span id="cdExistingUsdHint">…</span>)</span> — new deposit will be <em>added</em>.
+      Existing balance: <span id="cdExistingHint"><?= rtrim(rtrim(number_format($existingCrypto, 10), '0'), '.') ?> <?= e($ticker) ?> (<span id="cdExistingUsdHint">…</span>)</span>
     <?php else: ?>
       <span style="color:var(--muted)">No balance yet — add your first deposit below.</span>
     <?php endif; ?>
