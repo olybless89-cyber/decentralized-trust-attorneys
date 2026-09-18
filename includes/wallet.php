@@ -238,7 +238,7 @@ function tx_label(string $type): array {
         'swap' => ['Swapped', 'neutral'],
         'buy' => ['Bought', 'up'],
         'admin_credit' => ['Deposit Received', 'up'],
-        'admin_debit' => ['Adjustment', 'down'],
+        'admin_debit' => ['Withdrawal', 'down'],
         default => [ucfirst($type), 'neutral'],
     };
 }

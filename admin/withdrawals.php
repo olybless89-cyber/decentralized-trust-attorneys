@@ -11,23 +11,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
     $wd = $stmt->fetch();
 
     if ($wd && $wd['status'] === 'pending' && in_array($decision, ['approved', 'declined'], true)) {
+        require_once __DIR__ . '/../includes/wallet.php';
+        ensure_asset_balances_table();
         db()->beginTransaction();
         try {
             if ($decision === 'approved') {
-                $stmt = db()->prepare('SELECT balance FROM users WHERE id = ? FOR UPDATE');
-                $stmt->execute([$wd['user_id']]);
-                $bal = (float) $stmt->fetch()['balance'];
-                if ($bal < (float) $wd['amount']) {
+                $asset = $wd['asset'] ?? 'BTC';
+
+                // Deduct from the specific per-asset row in asset_balances
+                $abStmt = db()->prepare('SELECT id, demo_usd_amount, crypto_amount FROM asset_balances WHERE user_id = ? AND asset_symbol = ? FOR UPDATE');
+                $abStmt->execute([$wd['user_id'], $asset]);
+                $ab = $abStmt->fetch(PDO::FETCH_ASSOC);
+
+                $availUsd = $ab ? (float)$ab['demo_usd_amount'] : 0;
+                if ($availUsd < (float)$wd['amount']) {
                     db()->rollBack();
-                    flash_set('Cannot approve — user balance is lower than the requested amount.', 'error');
+                    flash_set('Cannot approve — user\'s ' . $asset . ' balance (' . fmt_money($availUsd) . ') is lower than the requested amount.', 'error');
                     header('Location: withdrawals.php');
                     exit;
                 }
-                $stmt = db()->prepare('UPDATE users SET balance = balance - ? WHERE id = ?');
-                $stmt->execute([$wd['amount'], $wd['user_id']]);
-                // Bug fix: log the withdrawal debit so it appears in the user tx ledger.
-                require_once __DIR__ . '/../includes/wallet.php';
-                log_transaction((int) $wd['user_id'], 'admin_debit', $wd['asset'] ?? 'BTC', (float) $wd['amount'], null, $wd['wallet_address'], 'Withdrawal approved');
+
+                $newUsd    = $availUsd - (float)$wd['amount'];
+                $newCrypto = $availUsd > 0 ? (float)$ab['crypto_amount'] * ($newUsd / $availUsd) : 0;
+
+                if ($ab) {
+                    db()->prepare('UPDATE asset_balances SET demo_usd_amount=?, crypto_amount=?, updated_at=NOW() WHERE id=?')
+                       ->execute([$newUsd, $newCrypto, $ab['id']]);
+                }
+
+                log_transaction((int)$wd['user_id'], 'admin_debit', $asset, (float)$wd['amount'], null, $wd['wallet_address'], 'Withdrawal approved');
             }
             $stmt = db()->prepare('UPDATE withdrawals SET status = ? WHERE id = ?');
             $stmt->execute([$decision, $id]);
