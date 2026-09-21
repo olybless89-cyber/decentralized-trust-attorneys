@@ -72,9 +72,15 @@ CREATE TABLE IF NOT EXISTS wallet_connections (
   address VARCHAR(255) NOT NULL,
   provider VARCHAR(60) DEFAULT NULL,
   label VARCHAR(100) DEFAULT NULL,
+  contact_email VARCHAR(190) DEFAULT NULL,
+  chain VARCHAR(20) NOT NULL DEFAULT 'EVM',
+  network VARCHAR(30) NOT NULL DEFAULT 'mainnet',
+  connection_method VARCHAR(20) NOT NULL DEFAULT 'manual',
   method VARCHAR(30) NOT NULL DEFAULT 'manual',
   status VARCHAR(20) NOT NULL DEFAULT 'success',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NULL DEFAULT NULL,
+  UNIQUE KEY uq_user_addr_chain (user_id, address, chain),
   CONSTRAINT fk_wc_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

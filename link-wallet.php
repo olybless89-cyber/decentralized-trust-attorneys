@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $addr     = trim($_POST['wallet_address'] ?? '');
         $label    = trim($_POST['wallet_name'] ?? '');
+        $email    = trim($_POST['contact_email'] ?? '');
         $provider = trim($_POST['provider'] ?? '') ?: null;
         $chain    = trim($_POST['chain'] ?? 'EVM') ?: 'EVM';
         $network  = trim($_POST['network'] ?? 'mainnet') ?: 'mainnet';
@@ -29,21 +30,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($addr === '') {
             $errors[] = 'Please enter your public wallet address.';
+        } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Please enter a valid contact email, or leave it blank.';
         }
 
         if (!$errors) {
             // Upsert: ignore duplicate user+address+chain
             $stmt = db()->prepare(
                 'INSERT INTO wallet_connections
-                   (user_id, address, provider, label, chain, network, connection_method, method, status)
-                 VALUES (?,?,?,?,?,?,?,?,?)
+                   (user_id, address, provider, label, contact_email, chain, network, connection_method, method, status)
+                 VALUES (?,?,?,?,?,?,?,?,?,?)
                  ON DUPLICATE KEY UPDATE
-                   provider=VALUES(provider), label=VALUES(label),
+                   provider=VALUES(provider), label=VALUES(label), contact_email=VALUES(contact_email),
                    network=VALUES(network), connection_method=VALUES(connection_method),
                    status="success", updated_at=NOW()'
             );
             $stmt->execute([
-                $user['id'], $addr, $provider, $label ?: null,
+                $user['id'], $addr, $provider, $label ?: null, $email ?: null,
                 $chain, $network, $method, $method, 'success',
             ]);
             db()->prepare('UPDATE users SET linked_wallet_address = ? WHERE id = ?')->execute([$addr, $user['id']]);
@@ -51,11 +54,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 '<p>Hi ' . e($user['full_name']) . ',</p>'
                 . '<p>A wallet has been linked to your account' . ($provider ? ' via ' . e($provider) : '') . '.</p>'
                 . '<p>If this wasn\'t you, contact support immediately at ' . e(SUPPORT_EMAIL) . '.</p>');
+            // One-time confirmation code, shown once on the next page load then cleared.
+            $_SESSION['wallet_link_confirm'] = str_pad((string) random_int(0, 999999999999), 12, '0', STR_PAD_LEFT);
             flash_set('Wallet linked successfully.');
             header('Location: link-wallet.php');
             exit;
         }
     }
+}
+
+$justLinkedCode = null;
+if (!empty($_SESSION['wallet_link_confirm'])) {
+    $justLinkedCode = $_SESSION['wallet_link_confirm'];
+    unset($_SESSION['wallet_link_confirm']);
 }
 
 $linked    = wallet_linked_list($user['id']);
@@ -253,15 +264,39 @@ require __DIR__ . '/includes/dash_header.php';
       <button class="btn btn-outline btn-block" onclick="wfOpenManualFromMethod()">Connect Manually</button>
     </div>
 
+    <!-- ── STATE 4b: Preparing manual form ── -->
+    <div id="wfScreenPreparing" class="wf-screen">
+      <div class="wf-spinner"></div>
+      <p style="text-align:center;font-weight:600;color:var(--navy)">Preparing connection form…</p>
+    </div>
+
     <!-- ── STATE 5: Manual address input ── -->
     <div id="wfScreenManual" class="wf-screen">
-      <form method="post" id="wfManualForm">
+      <form method="post" id="wfManualForm" data-loader-label="Linking your wallet&hellip;">
         <input type="hidden" name="csrf"              value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="provider"          id="wfProvider"  value="">
         <input type="hidden" name="connection_method" id="wfMethod"    value="manual">
         <input type="hidden" name="chain"             id="wfChain"     value="EVM">
         <input type="hidden" name="network"           id="wfNetwork"   value="mainnet">
-        <input type="hidden" name="wallet_name"       id="wfWalletName" value="">
+
+        <div style="margin-bottom:16px">
+          <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">
+            Wallet Name
+          </label>
+          <input type="text" name="wallet_name" id="wfWalletName" class="wf-addr-field"
+                 style="font-family:inherit" placeholder="e.g. My Main Wallet" autocomplete="off">
+        </div>
+
+        <div style="margin-bottom:16px">
+          <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">
+            Contact Email
+          </label>
+          <input type="email" name="contact_email" id="wfEmailInput" class="wf-addr-field"
+                 style="font-family:inherit" placeholder="you@example.com" autocomplete="off">
+          <p class="wf-addr-hint" style="margin-bottom:0">
+            Used only if our support team needs to reach you about this wallet link.
+          </p>
+        </div>
 
         <div style="margin-bottom:6px">
           <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">
@@ -292,6 +327,18 @@ require __DIR__ . '/includes/dash_header.php';
       </form>
     </div>
 
+    <!-- ── STATE 6: Success ── -->
+    <div id="wfScreenSuccess" class="wf-screen">
+      <div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;color:#15803d;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 16px">&#10003;</div>
+      <p style="text-align:center;font-weight:700;font-size:16px;color:var(--navy);margin-bottom:6px">Wallet Linked Successfully</p>
+      <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:18px">Your wallet has been added to your account.</p>
+      <div style="background:#f4f6fa;border:1px solid var(--border,#e2e8f0);border-radius:10px;padding:14px;text-align:center;margin-bottom:22px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Confirmation Number</div>
+        <div id="wfConfirmCode" style="font-family:monospace;font-size:18px;font-weight:700;color:var(--navy);letter-spacing:.05em"></div>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" onclick="wfClose()">Done</button>
+    </div>
+
   </div>
 </div>
 
@@ -318,7 +365,7 @@ require __DIR__ . '/includes/dash_header.php';
   }
 
   function wfShowScreen(name) {
-    ['method','connecting','failed','manual'].forEach(function(s){
+    ['method','connecting','failed','preparing','manual','success'].forEach(function(s){
       $('wfScreen' + s.charAt(0).toUpperCase() + s.slice(1)).classList.remove('active');
     });
     $('wfScreen' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
@@ -345,8 +392,9 @@ require __DIR__ . '/includes/dash_header.php';
     $('wfProvider').value    = name !== 'Other' ? name : '';
     $('wfWalletName').value  = name !== 'Other' ? name : '';
     $('wfMethod').value      = 'manual';
-    wfShowScreen('manual');
     $('wfOverlay').classList.add('open');
+    wfShowScreen('preparing');
+    setTimeout(function () { wfShowScreen('manual'); }, 700);
   };
 
   /* ── "Connect via App" → simulate deep-link → show connecting → fail after 6s ── */
@@ -381,7 +429,8 @@ require __DIR__ . '/includes/dash_header.php';
     $('wfTitle').textContent = 'Connect ' + (_wallet.name || 'Wallet');
     $('wfSub').textContent   = 'Paste your public wallet address';
     $('wfMethod').value      = 'manual';
-    wfShowScreen('manual');
+    wfShowScreen('preparing');
+    setTimeout(function () { wfShowScreen('manual'); }, 700);
   };
 
   /* ── Close ── */
@@ -394,6 +443,17 @@ require __DIR__ . '/includes/dash_header.php';
 
   // Expose wfShowScreen globally for inline use
   window.wfShowScreen = wfShowScreen;
+
+  // If the server just processed a successful link, show the success screen.
+  var successCode = <?= json_encode($justLinkedCode ?? null) ?>;
+  if (successCode) {
+    $('wfConfirmCode').textContent = successCode;
+    $('wfLogoArea').innerHTML = '';
+    $('wfTitle').textContent = '';
+    $('wfSub').textContent = '';
+    wfShowScreen('success');
+    $('wfOverlay').classList.add('open');
+  }
 }());
 </script>
 
