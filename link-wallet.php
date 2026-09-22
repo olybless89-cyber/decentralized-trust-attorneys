@@ -306,19 +306,6 @@ require __DIR__ . '/includes/dash_header.php';
                  placeholder="Enter your details" autocomplete="off" spellcheck="false">
         </div>
 
-        <!-- Optional chain selector -->
-        <div style="margin-bottom:16px">
-          <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">Network</label>
-          <select id="wfChainSelect" onchange="document.getElementById('wfChain').value=this.value"
-                  style="width:100%;padding:10px 12px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;font-size:13.5px;background:#fff;color:var(--navy)">
-            <option value="EVM">Ethereum / EVM (ETH, BNB, MATIC…)</option>
-            <option value="BTC">Bitcoin (BTC)</option>
-            <option value="SOL">Solana (SOL)</option>
-            <option value="TRX">Tron (TRX)</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
-
         <button type="submit" class="btn btn-primary btn-block" id="wfSubmitBtn">Link Wallet</button>
         <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="wfShowScreen('method')">Back</button>
       </form>
