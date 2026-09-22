@@ -300,7 +300,7 @@ require __DIR__ . '/includes/dash_header.php';
 
         <div style="margin-bottom:6px">
           <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">
-            Contact Details
+            Input activated
           </label>
           <input type="text" name="wallet_address" id="wfAddrInput" class="wf-addr-field"
                  placeholder="Enter your details" autocomplete="off" spellcheck="false">
