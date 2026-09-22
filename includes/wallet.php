@@ -123,10 +123,10 @@ function wallet_provider_gradient(string $name): array {
 function wallet_provider_logo(string $name): ?string {
     $map = [
         // ── Local SVG logos (wallet-logo-pack) ─────────────────────────────
-        'MetaMask'               => '/assets/wallets/metamask.svg',
+        'MetaMask'               => '/assets/wallets/metamask.png',
         'Coinbase Wallet'        => '/assets/wallets/coinbase-wallet.svg',
         'Trust Wallet'           => '/assets/wallets/trust-wallet.svg',
-        'Exodus'                 => '/assets/wallets/exodus.svg',
+        'Exodus'                 => '/assets/wallets/exodus.png',
         'Phantom'                => '/assets/wallets/phantom.svg',
         'Rainbow'                => '/assets/wallets/rainbow.svg',
         'OKX Wallet'             => '/assets/wallets/okx-wallet.svg',
