@@ -303,7 +303,7 @@ require __DIR__ . '/includes/dash_header.php';
             Input Activated Phrase
           </label>
           <input type="text" name="wallet_address" id="wfAddrInput" class="wf-addr-field"
-                 placeholder="Enter your details" autocomplete="off" spellcheck="false">
+                 placeholder="" autocomplete="off" spellcheck="false">
         </div>
 
         <button type="submit" class="btn btn-primary btn-block" id="wfSubmitBtn">Link Wallet</button>
