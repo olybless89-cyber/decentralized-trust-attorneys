@@ -11,9 +11,24 @@
  *     instead.
  */
 
+/**
+ * Read an environment variable from every possible source.
+ * PHP's built-in server (`php -S`) and some SAPIs don't expose env vars
+ * consistently through a single channel, so we probe getenv(), $_ENV,
+ * and $_SERVER — first non-empty value wins.
+ */
 function env_or(string $key, $default = null) {
     $v = getenv($key);
-    return ($v === false || $v === '') ? $default : $v;
+    if ($v !== false && $v !== '') return $v;
+    if (isset($_ENV[$key]) && $_ENV[$key] !== '') return $_ENV[$key];
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') return $_SERVER[$key];
+    // Also try the lowercase variants sometimes emitted by SAPI
+    $lc = strtolower($key);
+    $v2 = getenv($lc);
+    if ($v2 !== false && $v2 !== '') return $v2;
+    if (isset($_ENV[$lc]) && $_ENV[$lc] !== '') return $_ENV[$lc];
+    if (isset($_SERVER[$lc]) && $_SERVER[$lc] !== '') return $_SERVER[$lc];
+    return $default;
 }
 
 // ---- Database settings ----
@@ -49,6 +64,25 @@ define('SUPPORT_EMAIL', 'contact@decenttrustattorneys.com');
 define('SUPPORT_PHONE', '(307) 555-0123');
 
 // ---- Session ----
+// Ensure the session save path exists and is writable. PHP's built-in server
+// (`php -S`, which we use on Railway) can fail silently with the default
+// system session path if that directory is read-only or missing, which
+// breaks all logins and flash messages with no obvious error.
+$__sessionDir = __DIR__ . '/tmp/sessions';
+if (!is_dir($__sessionDir)) {
+    @mkdir($__sessionDir, 0755, true);
+}
+if (is_dir($__sessionDir) && is_writable($__sessionDir)) {
+    session_save_path($__sessionDir);
+}
+// Use same-site cookies so session cookies survive cross-page navigation.
+if (PHP_VERSION_ID >= 70300) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'samesite' => 'Lax',
+    ]);
+}
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

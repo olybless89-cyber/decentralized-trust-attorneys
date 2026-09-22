@@ -1,0 +1,2 @@
+# Deny all direct access to the tmp/ directory (session files, logs, etc.)
+Require all denied

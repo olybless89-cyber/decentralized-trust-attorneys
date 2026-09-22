@@ -81,15 +81,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$userId, $entity_type, $business_name, $formation_state, $full_name, $email, $phone, $street_address . ($city ? ', ' . $city : '')]);
 
             if ($isNewUser) {
-                send_email($email, $full_name, 'Welcome to ' . SITE_NAME,
-                    '<p>Hi ' . e($full_name) . ',</p><p>Your account has been created. You can log in any time at <a href="' . e(SITE_URL) . '/login.php">' . e(SITE_URL) . '/login.php</a> to track your application and manage your account.</p>');
+                try {
+                    @send_email($email, $full_name, 'Welcome to ' . SITE_NAME,
+                        '<p>Hi ' . e($full_name) . ',</p><p>Your account has been created. You can log in any time at <a href="' . e(SITE_URL) . '/login.php">' . e(SITE_URL) . '/login.php</a> to track your application and manage your account.</p>');
+                } catch (\Throwable $mailErr) {
+                    error_log('[application] welcome email skipped: ' . $mailErr->getMessage());
+                }
             }
-            send_email($email, $full_name, 'Application Received — ' . $business_name,
-                '<p>Hi ' . e($full_name) . ',</p><p>We\'ve received your formation application for <strong>' . e($business_name) . '</strong> (' . e($entityLabels[$entity_type]) . ', jurisdiction: ' . e($formation_state) . ').</p><p>Our team will review it and update the status on your dashboard. You\'ll get another email as soon as that happens.</p>');
+            try {
+                @send_email($email, $full_name, 'Application Received — ' . $business_name,
+                    '<p>Hi ' . e($full_name) . ',</p><p>We\'ve received your formation application for <strong>' . e($business_name) . '</strong> (' . e($entityLabels[$entity_type]) . ', jurisdiction: ' . e($formation_state) . ').</p><p>Our team will review it and update the status on your dashboard. You\'ll get another email as soon as that happens.</p>');
+            } catch (\Throwable $mailErr) {
+                error_log('[application] receipt email skipped: ' . $mailErr->getMessage());
+            }
 
             if ($isNewUser) {
-                flash_set('Registration and application submitted successfully! Please log in with your details below to track it.');
-                header('Location: login.php?mode=login&next=' . urlencode('dashboard.php'));
+                $_SESSION['user_id'] = $userId;
+                flash_set('Welcome, ' . e($full_name) . '! Your application has been submitted and is being reviewed.');
+                header('Location: dashboard.php');
             } else {
                 flash_set('Application submitted! We will review it shortly.');
                 header('Location: dashboard.php');

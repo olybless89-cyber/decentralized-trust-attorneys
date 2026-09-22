@@ -32,8 +32,8 @@ $__flash = flash_get();
         <a href="<?= $__base ?? '' ?>dashboard.php" class="btn btn-outline btn-sm">Dashboard</a>
         <a href="<?= $__base ?? '' ?>logout.php" class="btn btn-primary btn-sm">Log out</a>
       <?php else: ?>
-        <a href="<?= $__base ?? '' ?>login.php" class="btn btn-outline btn-sm">Login</a>
-        <a href="<?= $__base ?? '' ?>application.php" class="btn btn-primary btn-sm" data-loader-label="Loading your application&hellip;">Start Application</a>
+        <a href="<?= $__base ?? '' ?>login.php?mode=login" class="btn btn-outline btn-sm">Login</a>
+        <a href="<?= $__base ?? '' ?>login.php?mode=signup" class="btn btn-primary btn-sm" style="min-width:92px">Sign Up</a>
       <?php endif; ?>
     </div>
   </div>

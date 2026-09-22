@@ -10,7 +10,7 @@ require __DIR__ . '/includes/header.php';
     <p class="lead">Secure your assets, minimize your tax burden, and ensure absolute privacy with the nation's premier jurisdiction for corporate formation. Expertly guided, fully compliant.</p>
     <div class="hero-actions">
       <a href="application.php" class="btn btn-gold" data-loader-label="Loading your application&hellip;">Start Your Formation &rarr;</a>
-      <a href="#packages" class="btn btn-outline" style="border-color:#334155;color:#fff">Learn More</a>
+      <a href="login.php?mode=signup" class="btn btn-outline" style="border-color:#334155;color:#fff">Create Free Account</a>
     </div>
     <div class="stat-row">
       <div><div class="num">15+</div><div class="label">Years Experience</div></div>

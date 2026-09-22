@@ -1,0 +1,22 @@
+# Environment / local config overrides
+.env
+*.env.local
+
+# Uploaded user files — keep the folder but not the content
+uploads/ids/*
+uploads/wallets/*
+!uploads/ids/.gitkeep
+!uploads/wallets/.gitkeep
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# PHP / Composer cache
+vendor/
+composer.lock
+
+# IDE folders
+.idea/
+.vscode/
+*.code-workspace

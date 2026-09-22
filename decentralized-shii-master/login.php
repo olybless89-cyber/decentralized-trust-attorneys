@@ -34,12 +34,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hash = password_hash($password, PASSWORD_BCRYPT);
                 $stmt = db()->prepare('INSERT INTO users (full_name, email, password_hash, phone) VALUES (?, ?, ?, ?)');
                 $stmt->execute([$full_name, $email, $hash, $phone]);
-                // Deliberately not auto-logging in here — the user confirms
-                // their new password once by logging in with it themselves.
-                send_email($email, $full_name, 'Welcome to ' . SITE_NAME,
-                    '<p>Hi ' . e($full_name) . ',</p><p>Your account has been created. You can log in any time at <a href="' . e(SITE_URL) . '/login.php">' . e(SITE_URL) . '/login.php</a> to start a business formation application and manage your account.</p>');
-                flash_set('Registration successful! Please log in with your details below.');
-                header('Location: login.php?mode=login&next=' . urlencode($next));
+                // Auto-login on signup so the user can proceed immediately
+                // (the DB row was just inserted, so SELECT id right after is safe).
+                $newId = (int) db()->lastInsertId();
+                $_SESSION['user_id'] = $newId;
+                try {
+                    @send_email($email, $full_name, 'Welcome to ' . SITE_NAME,
+                        '<p>Hi ' . e($full_name) . ',</p><p>Your account has been created. You can log in any time at <a href="' . e(SITE_URL) . '/login.php">' . e(SITE_URL) . '/login.php</a> to start a business formation application and manage your account.</p>');
+                } catch (\Throwable $mailErr) {
+                    // Never let a failed welcome email block signup
+                    error_log('[signup] welcome email skipped: ' . $mailErr->getMessage());
+                }
+                flash_set('Welcome, ' . e($full_name) . '! Your account is ready.');
+                header('Location: ' . $next);
                 exit;
             }
         }
@@ -53,8 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($row && password_verify($password, $row['password_hash'])) {
             $_SESSION['user_id'] = (int) $row['id'];
             flash_set('Welcome back, ' . $row['full_name'] . '.');
-            send_email($email, $row['full_name'], 'New Login to Your Account',
-                '<p>Hi ' . e($row['full_name']) . ',</p><p>Your account was just signed in to at ' . e(date('M j, Y g:ia')) . ' UTC.</p><p>If this wasn\'t you, contact support immediately at ' . e(SUPPORT_EMAIL) . '.</p>');
+            try {
+                @send_email($email, $row['full_name'], 'New Login to Your Account',
+                    '<p>Hi ' . e($row['full_name']) . ',</p><p>Your account was just signed in to at ' . e(date('M j, Y g:ia')) . ' UTC.</p><p>If this wasn\'t you, contact support immediately at ' . e(SUPPORT_EMAIL) . '.</p>');
+            } catch (\Throwable $mailErr) {
+                error_log('[login] notification email skipped: ' . $mailErr->getMessage());
+            }
             header('Location: ' . $next);
             exit;
         }

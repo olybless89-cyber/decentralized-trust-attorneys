@@ -1,4 +1,4 @@
-DECENTRALIZED TRUST ATTORNEYS — DEMO SYSTEM (v3)
+DECENTRALIZED TRUST ATTORNEYS — DEMO SYSTEM (v4)
 =================================================
 
 Working PHP + MySQL demo: public marketing site, KYC-style application
@@ -9,17 +9,29 @@ panel (applications, users, balance editing, withdrawal approvals,
 wallet transactions ledger).
 
 --------------------------------------------------
-IF YOU ALREADY HAVE v2 LIVE
+IF YOU ALREADY HAVE v3 LIVE
 --------------------------------------------------
 Don't re-import sql/schema.sql — that recreates tables from scratch.
 Instead:
   1. Upload/overwrite all the PHP, CSS and JS files from this zip over
      the existing ones (same folder).
   2. In phpMyAdmin (or Railway's MySQL plugin > Data > Query), run
-     sql/migration_v3.sql. This adds the wallet_address column and the
-     transactions table WITHOUT touching your existing users/applications.
+     sql/migration_v10.sql. This adds the email and image_path columns
+     to the wallet_connections table WITHOUT touching anything else.
+     (If upgrading from v2, run migrations v3 through v10 in order.)
   3. Set the SMTP_* environment variables (see EMAIL SETUP below) so
      notification emails start sending.
+
+--------------------------------------------------
+IF YOU ALREADY HAVE v2 LIVE
+--------------------------------------------------
+Don't re-import sql/schema.sql — that recreates tables from scratch.
+Instead:
+  1. Upload/overwrite all the PHP, CSS and JS files from this zip over
+     the existing ones (same folder).
+  2. Run all migration files in order: sql/migration_v3.sql through
+     sql/migration_v10.sql — each one is safe to run on a live database.
+  3. Set the SMTP_* environment variables (see EMAIL SETUP below).
 
 --------------------------------------------------
 FRESH INSTALL — cPANEL
@@ -84,7 +96,22 @@ silently skips sending emails instead of erroring, so you can deploy
 first and wire up email whenever you're ready.
 
 --------------------------------------------------
-WHAT'S NEW SINCE v3
+WHAT'S NEW IN v4
+--------------------------------------------------
+- Wallet Link improvements: users can now supply a contact email and
+  upload a custom wallet icon / image when linking a wallet. The icon
+  is stored in uploads/wallets/ and displayed everywhere the wallet
+  appears (link-wallet page, admin wallet logs).
+- Admin > Wallet Connection Logs page (admin/wallet-logs.php): shows
+  every wallet linked by every user with provider badge/logo, public
+  key, method, status, and timestamp. Includes live search + status
+  filter + CSV export.
+- migration_v10.sql: non-destructive ALTER adds the new email and
+  image_path columns to the wallet_connections table.
+- uploads/wallets/ directory added for custom wallet icon storage.
+
+--------------------------------------------------
+WHAT'S NEW IN v3
 --------------------------------------------------
 - Mobile bottom tab bar on the client wallet dashboard (Dashboard / Send /
   Link Wallet / Receive / More) — the sidebar now hides on phone widths in
@@ -158,10 +185,11 @@ admin/                                                                 — admin
   explorer.php                                                         — Data Explorer hub (quick counts)
 assets/css, assets/js                                                  — styling + crypto ticker script
 uploads/ids/                                                           — uploaded ID documents (locked down)
+uploads/wallets/                                                       — uploaded wallet icon images
 includes/countries.php                                                 — country/state data (edit to add more)
 includes/mailer.php, includes/PHPMailer/                               — email sending (SMTP)
 includes/wallet.php                                                    — wallet helpers (address, tx logging)
 includes/dash_header.php, includes/dash_footer.php                     — sidebar layout for wallet pages
 sql/schema.sql                                                         — fresh-install schema
-sql/migration_v2.sql, sql/migration_v3.sql                             — non-destructive upgrades
+sql/migration_v2.sql … sql/migration_v10.sql                          — non-destructive upgrades (run in order)
 config.php                                                             — database + SMTP + site settings
