@@ -58,7 +58,7 @@ require __DIR__ . '/includes/header.php';
         </td>
         <td><?= e($l['provider'] ?? '') ?: '&mdash;' ?></td>
         <td><?= e(ucfirst($l['method'])) ?></td>
-        <td class="adm-mono" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        <td class="adm-mono" style="max-width:260px;white-space:normal;word-break:break-all">
           <?= e($l['address']) ?>
         </td>
         <td><?= e($l['contact_email'] ?? '') ?: '&mdash;' ?></td>
