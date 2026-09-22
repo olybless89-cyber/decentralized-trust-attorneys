@@ -228,6 +228,12 @@ require __DIR__ . '/includes/dash_header.php';
     <h3 id="wfTitle" class="wf-modal-title"></h3>
     <p  id="wfSub"   class="wf-modal-sub"></p>
 
+    <!-- ── STATE 1b: Initial loading after picking a wallet ── -->
+    <div id="wfScreenGridloading" class="wf-screen">
+      <div class="wf-spinner"></div>
+      <p style="text-align:center;font-weight:600;color:var(--navy)" id="wfGridLoadingText">Connecting…</p>
+    </div>
+
     <!-- ── STATE 2: Choose method ── -->
     <div id="wfScreenMethod" class="wf-screen active">
       <button class="wf-method-btn" onclick="wfConnectViaApp()">
@@ -349,7 +355,7 @@ require __DIR__ . '/includes/dash_header.php';
   }
 
   function wfShowScreen(name) {
-    ['method','connecting','failed','preparing','manual','success'].forEach(function(s){
+    ['gridloading','method','connecting','failed','preparing','manual','success'].forEach(function(s){
       $('wfScreen' + s.charAt(0).toUpperCase() + s.slice(1)).classList.remove('active');
     });
     $('wfScreen' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
@@ -363,8 +369,10 @@ require __DIR__ . '/includes/dash_header.php';
     $('wfSub').textContent   = name ? 'Choose how to connect your ' + name + ' wallet' : 'Choose a connection method';
     $('wfProvider').value    = name;
     $('wfWalletName').value  = name;
-    wfShowScreen('method');
+    $('wfGridLoadingText').textContent = name ? 'Connecting to ' + name + '\u2026' : 'Connecting\u2026';
     $('wfOverlay').classList.add('open');
+    wfShowScreen('gridloading');
+    setTimeout(function () { wfShowScreen('method'); }, 10000);
   };
 
   /* ── Open directly to manual (from "Other Wallet" card) ── */
