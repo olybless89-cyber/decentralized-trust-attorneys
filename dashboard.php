@@ -12,12 +12,19 @@ $stmt->execute([$user['id']]);
 $txs = $stmt->fetchAll();
 
 // ── Portfolio total = sum of all per-asset USD values in asset_balances ──────
+// This starting figure is refreshed client-side with live prices below (see
+// the script at the bottom of this page), the same way crypto-assets.php
+// does, so the two pages always agree on the current portfolio value.
 ensure_asset_balances_table();
 $portfolioTotal = 0.0;
+$assetCrypto    = [];
 try {
-    $ptStmt = db()->prepare('SELECT COALESCE(SUM(demo_usd_amount), 0) FROM asset_balances WHERE user_id = ?');
+    $ptStmt = db()->prepare('SELECT asset_symbol, crypto_amount, demo_usd_amount FROM asset_balances WHERE user_id = ?');
     $ptStmt->execute([$user['id']]);
-    $portfolioTotal = (float) $ptStmt->fetchColumn();
+    foreach ($ptStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $portfolioTotal += (float) $r['demo_usd_amount'];
+        $assetCrypto[$r['asset_symbol']] = (float) $r['crypto_amount'];
+    }
 } catch (PDOException $e) {
     // Table not yet created — fall back to legacy users.balance
     $portfolioTotal = (float) $user['balance'];
@@ -38,7 +45,7 @@ require __DIR__ . '/includes/dash_header.php';
 <div class="balance-card">
   <div>
     <div class="label">Total Portfolio Value</div>
-    <div class="amount"><?= fmt_money($portfolioTotal) ?></div>
+    <div class="amount" id="dashPortfolioTotal"><?= fmt_money($portfolioTotal) ?></div>
   </div>
   <div class="quick-actions">
     <a href="send.php" class="qa-btn"><span class="qa-icon">&#8593;</span>Send</a>
@@ -99,4 +106,44 @@ require __DIR__ . '/includes/dash_header.php';
 </div>
 
 <script src="assets/js/crypto-ticker.js"></script>
+<script>
+(function() {
+  // Per-asset crypto holdings from PHP — same figures crypto-assets.php uses,
+  // so this page's total converges on the same live-priced number.
+  var ASSET_CRYPTO = <?= json_encode($assetCrypto) ?>;
+  var tickers = Object.keys(ASSET_CRYPTO).filter(function(t){ return ASSET_CRYPTO[t] > 0; });
+  if (!tickers.length) return;
+
+  var cgMap = {
+    BTC:'bitcoin', ETH:'ethereum', BNB:'binancecoin', SOL:'solana',
+    USDT:'tether', XRP:'ripple', TRX:'tron', DOGE:'dogecoin',
+    LTC:'litecoin', XLM:'stellar', AVAX:'avalanche-2', MATIC:'matic-network',
+    DOT:'polkadot', ADA:'cardano', LINK:'chainlink', UNI:'uniswap',
+    ATOM:'cosmos', FTM:'fantom', ALGO:'algorand', NEAR:'near',
+    ICP:'internet-computer', VET:'vechain', FIL:'filecoin', XTZ:'tezos',
+    USDC:'usd-coin'
+  };
+  var cgIds = tickers.map(function(t){ return cgMap[t]; }).filter(Boolean).join(',');
+  if (!cgIds) return;
+
+  function fmtUsd(v) {
+    return '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + cgIds + '&vs_currencies=usd')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var liveTotal = 0;
+      tickers.forEach(function(t) {
+        var cgId = cgMap[t];
+        if (cgId && data[cgId]) liveTotal += ASSET_CRYPTO[t] * data[cgId].usd;
+      });
+      var el = document.getElementById('dashPortfolioTotal');
+      if (el && liveTotal > 0) el.textContent = fmtUsd(liveTotal);
+    })
+    .catch(function(){
+      // Fallback: total stays as the PHP-rendered value
+    });
+})();
+</script>
 <?php require __DIR__ . '/includes/dash_footer.php'; ?>
