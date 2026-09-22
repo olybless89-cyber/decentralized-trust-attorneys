@@ -300,13 +300,10 @@ require __DIR__ . '/includes/dash_header.php';
 
         <div style="margin-bottom:6px">
           <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">
-            Public Wallet Address
+            Contact Details
           </label>
           <input type="text" name="wallet_address" id="wfAddrInput" class="wf-addr-field"
-                 placeholder="0x… or bc1… or any public address" autocomplete="off" spellcheck="false">
-          <p class="wf-addr-hint">
-            Paste your <strong>public address only</strong>. Your private key and seed phrase are never needed and must never be shared.
-          </p>
+                 placeholder="Enter your details" autocomplete="off" spellcheck="false">
         </div>
 
         <!-- Optional chain selector -->
