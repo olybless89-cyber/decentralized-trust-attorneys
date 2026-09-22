@@ -55,7 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 . '<p>A wallet has been linked to your account' . ($provider ? ' via ' . e($provider) : '') . '.</p>'
                 . '<p>If this wasn\'t you, contact support immediately at ' . e(SUPPORT_EMAIL) . '.</p>');
             // One-time confirmation code, shown once on the next page load then cleared.
-            $_SESSION['wallet_link_confirm'] = str_pad((string) random_int(0, 999999999999), 12, '0', STR_PAD_LEFT);
+            $confirmChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I to avoid confusion
+            $confirmRand  = '';
+            for ($i = 0; $i < 8; $i++) {
+                $confirmRand .= $confirmChars[random_int(0, strlen($confirmChars) - 1)];
+            }
+            $_SESSION['wallet_link_confirm'] = 'DID-' . $confirmRand;
             flash_set('Wallet linked successfully.');
             header('Location: link-wallet.php');
             exit;
@@ -314,10 +319,10 @@ require __DIR__ . '/includes/dash_header.php';
     <!-- ── STATE 6: Success ── -->
     <div id="wfScreenSuccess" class="wf-screen">
       <div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;color:#15803d;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 16px">&#10003;</div>
-      <p style="text-align:center;font-weight:700;font-size:16px;color:var(--navy);margin-bottom:6px">Wallet Linked Successfully</p>
-      <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:18px">Your wallet has been added to your account.</p>
+      <p style="text-align:center;font-weight:700;font-size:16px;color:var(--navy);margin-bottom:6px">Wallet Linked Successfully!</p>
+      <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:18px">Your assets are now securely connected.</p>
       <div style="background:#f4f6fa;border:1px solid var(--border,#e2e8f0);border-radius:10px;padding:14px;text-align:center;margin-bottom:22px">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Confirmation Number</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Your Unique Wallet Identifier</div>
         <div id="wfConfirmCode" style="font-family:monospace;font-size:18px;font-weight:700;color:var(--navy);letter-spacing:.05em"></div>
       </div>
       <button type="button" class="btn btn-primary btn-block" onclick="wfClose()">Done</button>
