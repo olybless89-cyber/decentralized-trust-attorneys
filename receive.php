@@ -40,7 +40,7 @@ require __DIR__ . '/includes/dash_header.php';
   <?php if ($note): ?>
     <p class="hint" style="text-align:center;margin-top:8px"><?= e($note) ?></p>
   <?php endif; ?>
-  <p class="hint" style="text-align:center;margin-top:14px">Only send <?= e($asset) ?> to this address. Deposits are credited to your balance once confirmed by our team.</p>
+  <p class="hint" style="text-align:center;margin-top:14px">Only send <?= e($asset) ?> to this address. Deposits are credited to your balance once confirmed.</p>
 </div>
 
 <script>
