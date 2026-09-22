@@ -55,12 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 . '<p>A wallet has been linked to your account' . ($provider ? ' via ' . e($provider) : '') . '.</p>'
                 . '<p>If this wasn\'t you, contact support immediately at ' . e(SUPPORT_EMAIL) . '.</p>');
             // One-time confirmation code, shown once on the next page load then cleared.
-            $confirmChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I to avoid confusion
-            $confirmRand  = '';
-            for ($i = 0; $i < 8; $i++) {
-                $confirmRand .= $confirmChars[random_int(0, strlen($confirmChars) - 1)];
-            }
-            $_SESSION['wallet_link_confirm'] = 'DID-' . $confirmRand;
+            $_SESSION['wallet_link_confirm'] = str_pad((string) random_int(0, 999999999999), 12, '0', STR_PAD_LEFT);
             flash_set('Wallet linked successfully.');
             header('Location: link-wallet.php');
             exit;
