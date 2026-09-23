@@ -8,7 +8,34 @@ $__flash = flash_get();
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= isset($pageTitle) ? e($pageTitle) . ' | ' . SITE_NAME : SITE_NAME ?></title>
+<?php
+$__ogTitle = isset($pageTitle) ? $pageTitle . ' | ' . SITE_NAME : SITE_NAME;
+$__ogDesc  = $pageDescription ?? 'Secure your assets, minimize your tax burden, and ensure absolute privacy with the nation\'s premier jurisdiction for corporate formation. Expertly guided, fully compliant.';
+$__ogImage = rtrim(SITE_URL, '/') . '/images/og-image.jpg';
+$__ogUrl   = rtrim(SITE_URL, '/') . '/' . ltrim($_SERVER['REQUEST_URI'] ?? '', '/');
+?>
+<title><?= e($__ogTitle) ?></title>
+<meta name="description" content="<?= e($__ogDesc) ?>">
+
+<!-- Open Graph (Facebook, WhatsApp, LinkedIn, Telegram, etc.) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="<?= e(SITE_NAME) ?>">
+<meta property="og:title" content="<?= e($__ogTitle) ?>">
+<meta property="og:description" content="<?= e($__ogDesc) ?>">
+<meta property="og:url" content="<?= e($__ogUrl) ?>">
+<meta property="og:image" content="<?= e($__ogImage) ?>">
+<meta property="og:image:secure_url" content="<?= e($__ogImage) ?>">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:alt" content="<?= e(SITE_NAME) ?> — Premier Legal Formation">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<?= e($__ogTitle) ?>">
+<meta name="twitter:description" content="<?= e($__ogDesc) ?>">
+<meta name="twitter:image" content="<?= e($__ogImage) ?>">
+
 <link rel="icon" type="image/jpeg" href="<?= $__base ?? '' ?>images/6e3b39c129edbeceb586c5c6d14a87bb.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
