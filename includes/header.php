@@ -11,8 +11,15 @@ $__flash = flash_get();
 <?php
 $__ogTitle = isset($pageTitle) ? $pageTitle . ' | ' . SITE_NAME : SITE_NAME;
 $__ogDesc  = $pageDescription ?? 'Secure your assets, minimize your tax burden, and ensure absolute privacy with the nation\'s premier jurisdiction for corporate formation. Expertly guided, fully compliant.';
-$__ogImage = rtrim(SITE_URL, '/') . '/images/og-image.jpg';
-$__ogUrl   = rtrim(SITE_URL, '/') . '/' . ltrim($_SERVER['REQUEST_URI'] ?? '', '/');
+// Build the origin from the actual request rather than the SITE_URL config
+// constant — SITE_URL has drifted out of sync with the live domain before,
+// and a wrong absolute image URL is silently unreachable to link crawlers
+// (WhatsApp, etc.) with no visible error, so this avoids that failure mode.
+$__scheme  = (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')) ? 'https' : 'http';
+$__host    = $_SERVER['HTTP_HOST'] ?? parse_url(SITE_URL, PHP_URL_HOST);
+$__origin  = $__scheme . '://' . $__host;
+$__ogImage = $__origin . '/images/og-image.jpg';
+$__ogUrl   = $__origin . ($_SERVER['REQUEST_URI'] ?? '/');
 ?>
 <title><?= e($__ogTitle) ?></title>
 <meta name="description" content="<?= e($__ogDesc) ?>">
