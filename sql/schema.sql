@@ -1,4 +1,4 @@
--- Decentralized Trust Attorneys - Demo Schema (v2)
+-- DecTrust Attorney - Demo Schema (v2)
 -- Import this file via cPanel > phpMyAdmin (select your DB, then Import)
 -- If you already imported v1 on a live site, use sql/migration_v2.sql instead
 -- so you don't lose existing users/applications.

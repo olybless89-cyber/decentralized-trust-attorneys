@@ -1,4 +1,4 @@
--- Decentralized Trust Attorneys - Migration v2 -> v3
+-- DecTrust Attorney - Migration v2 -> v3
 -- Adds the wallet features (Send / Receive / Swap / Buy) and their
 -- transaction ledger. Run this on your EXISTING database instead of
 -- re-importing schema.sql, so you keep your existing users/applications.

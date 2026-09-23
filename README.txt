@@ -1,4 +1,4 @@
-DECENTRALIZED TRUST ATTORNEYS — DEMO SYSTEM (v3)
+DECTRUST ATTORNEY — DEMO SYSTEM (v3)
 =================================================
 
 Working PHP + MySQL demo: public marketing site, KYC-style application
@@ -72,7 +72,7 @@ cPanel: edit the constants directly in config.php instead):
     SMTP_PASS       your SMTP password / API key
     SMTP_SECURE     tls  or  ssl
     SMTP_FROM       no-reply@yourdomain.com
-    SMTP_FROM_NAME  Decentralized Trust Attorneys
+    SMTP_FROM_NAME  DecTrust Attorney
 
 Any SMTP provider works. Easiest free options if you don't already have
 one: Brevo (formerly Sendinblue — 300 free emails/day, SMTP details

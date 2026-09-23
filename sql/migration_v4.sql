@@ -1,4 +1,4 @@
--- Decentralized Trust Attorneys - Migration v3 -> v4
+-- DecTrust Attorney - Migration v3 -> v4
 -- Adds wallet connection logging and a coin/asset column on withdrawals,
 -- to power the redesigned admin panel (Wallet Logs + Withdrawal Requests).
 -- Run this on your EXISTING database instead of re-importing schema.sql.

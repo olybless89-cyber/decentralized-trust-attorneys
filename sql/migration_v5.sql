@@ -1,4 +1,4 @@
--- Decentralized Trust Attorneys - Migration v4 -> v5
+-- DecTrust Attorney - Migration v4 -> v5
 -- Adds provider/label columns to wallet_connections and a status column
 -- so a user can link wallets from a picker (Exodus, Coinbase, etc.) and
 -- unlink them later, for the redesigned "Wallet Management" page.

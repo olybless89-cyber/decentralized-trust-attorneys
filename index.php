@@ -6,7 +6,7 @@ require __DIR__ . '/includes/header.php';
 <section class="hero">
   <div class="container">
     <div class="eyebrow">&#9670; Premier Legal Formation</div>
-    <h1>Establish Your Business With<br><span class="accent">Decentralized Trust Attorneys</span></h1>
+    <h1>Establish Your Business With<br><span class="accent">DecTrust Attorney</span></h1>
     <p class="lead">Secure your assets, minimize your tax burden, and ensure absolute privacy with the nation's premier jurisdiction for corporate formation. Expertly guided, fully compliant.</p>
     <div class="hero-actions">
       <a href="application.php" class="btn btn-gold" data-loader-label="Loading your application&hellip;">Start Your Formation &rarr;</a>
@@ -42,7 +42,7 @@ require __DIR__ . '/includes/header.php';
       <div class="card">
         <div class="icon-badge">&#128274;</div>
         <h3>Close LLC</h3>
-        <p>Unique to Decentralized Trust and provides the same asset protection, tax and privacy benefits as a regular LLC &mdash; ideal for family or single-owner businesses with reduced requirements.</p>
+        <p>Unique to DecTrust Attorney and provides the same asset protection, tax and privacy benefits as a regular LLC &mdash; ideal for family or single-owner businesses with reduced requirements.</p>
         <a href="application.php?type=CLOSE_LLC" class="btn btn-outline btn-sm" data-loader-label="Loading your application&hellip;">Select Close LLC</a>
       </div>
       <div class="card">
@@ -58,8 +58,8 @@ require __DIR__ . '/includes/header.php';
 <section class="section section-alt" id="why">
   <div class="container">
     <div class="section-head">
-      <h2>Strategic Advantages of<br>Decentralized Trust Attorneys</h2>
-      <p>Decentralized Trust offers unmatched statutory benefits for business owners nationwide.</p>
+      <h2>Strategic Advantages of<br>DecTrust Attorney</h2>
+      <p>DecTrust Attorney offers unmatched statutory benefits for business owners nationwide.</p>
     </div>
     <div class="grid grid-3">
       <div class="card"><div class="icon-badge">&#128274;</div><h3>Privacy protection</h3><p>Strong privacy laws protecting business owners from public disclosure.</p></div>

@@ -53,7 +53,7 @@ $__ogUrl   = $__origin . ($_SERVER['REQUEST_URI'] ?? '/');
 <header class="topnav">
   <div class="container">
     <a href="<?= $__base ?? '' ?>index.php" class="brand">
-      <span class="mark">&#9878;</span> Decentralized Trust
+      <span class="mark">&#9878;</span> DecTrust Attorney
     </a>
     <nav class="nav-links">
       <a href="<?= $__base ?? '' ?>index.php">Home</a>

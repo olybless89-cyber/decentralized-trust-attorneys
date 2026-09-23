@@ -1,6 +1,6 @@
 <?php
 /**
- * Decentralized Trust Attorneys - Site Configuration
+ * DecTrust Attorney - Site Configuration
  *
  * Works two ways, automatically:
  *  1) RAILWAY: if you add a MySQL plugin to your Railway project and set
@@ -39,13 +39,13 @@ define('SMTP_PORT', (int) env_or('SMTP_PORT', '587'));
 define('SMTP_USER', env_or('SMTP_USER', ''));
 define('SMTP_PASS', env_or('SMTP_PASS', ''));
 define('SMTP_SECURE', env_or('SMTP_SECURE', 'tls')); // 'tls' or 'ssl'
-define('SMTP_FROM', env_or('SMTP_FROM', 'no-reply@decenttrustattorneys.com'));
-define('SMTP_FROM_NAME', env_or('SMTP_FROM_NAME', 'Decentralized Trust Attorneys'));
+define('SMTP_FROM', env_or('SMTP_FROM', 'no-reply@dectrustattorney.com'));
+define('SMTP_FROM_NAME', env_or('SMTP_FROM_NAME', 'DecTrust Attorney'));
 
 // ---- Site settings ----
-define('SITE_NAME', 'Decentralized Trust Attorneys');
-define('SITE_URL', env_or('SITE_URL', 'https://decenttrustattorneys.com')); // update to your live domain
-define('SUPPORT_EMAIL', 'contact@decenttrustattorneys.com');
+define('SITE_NAME', 'DecTrust Attorney');
+define('SITE_URL', env_or('SITE_URL', 'https://dectrustattorney.com')); // update to your live domain
+define('SUPPORT_EMAIL', 'contact@dectrustattorney.com');
 define('SUPPORT_PHONE', '(307) 555-0123');
 
 // ---- Session ----

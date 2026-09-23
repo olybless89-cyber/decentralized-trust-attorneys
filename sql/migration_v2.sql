@@ -1,4 +1,4 @@
--- Decentralized Trust Attorneys - Migration v1 -> v2
+-- DecTrust Attorney - Migration v1 -> v2
 -- Run this via phpMyAdmin on your EXISTING database (the one already live
 -- at webotester.online/dta-demo/) instead of re-importing schema.sql, so
 -- you keep your existing users and applications.

@@ -36,7 +36,7 @@ try {
 
 <div class="admin-shell dash-shell">
   <aside class="admin-side dash-side">
-    <div class="brand"><span class="mark">&#9878;</span> Decentralized Trust</div>
+    <div class="brand"><span class="mark">&#9878;</span> DecTrust Attorney</div>
     <div class="side-user">
       <div class="side-avatar"><?= e($initials ?: 'U') ?></div>
       <div>
