@@ -8,6 +8,9 @@ $errors = [];
 $countriesData = countries_with_states();
 $countryList = all_countries();
 
+ensure_next_of_kin_columns();
+$kinRelationships = ['Spouse', 'Parent', 'Sibling', 'Child', 'Guardian', 'Relative', 'Friend', 'Other'];
+
 $entityLabels = [
     'LLC' => 'Limited Liability Company (LLC)',
     'CCORP' => 'Corporation (C-CORP)',
@@ -39,9 +42,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formation_region = trim($_POST['formation_region'] ?? '');
         $formation_state = $formation_region !== '' ? ($formation_region . ', ' . $formation_country) : $formation_country;
 
+        $next_kin_name = trim($_POST['next_kin_name'] ?? '');
+        $next_kin_relationship = trim($_POST['next_kin_relationship'] ?? '');
+        $next_kin_phone = trim($_POST['next_kin_phone'] ?? '');
+        $next_kin_email = trim($_POST['next_kin_email'] ?? '');
+        $next_kin_address = trim($_POST['next_kin_address'] ?? '');
+
         // --- validation ---
         if ($full_name === '' || $email === '' || $phone === '' || $country === '' || $business_name === '' || !isset($entityLabels[$entity_type])) {
             $errors[] = 'Please complete all required fields marked with *.';
+        }
+        if ($next_kin_name === '' || $next_kin_relationship === '' || $next_kin_phone === '') {
+            $errors[] = 'Please complete the Next of Kin fields marked with *.';
+        }
+        if ($next_kin_email !== '' && !filter_var($next_kin_email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Please enter a valid Next of Kin email address, or leave it blank.';
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'Please enter a valid email address.';
@@ -77,8 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // same as the Sign Up flow on login.php.
             }
 
-            $stmt = db()->prepare('INSERT INTO applications (user_id, entity_type, business_name, state, owner_name, owner_email, owner_phone, address) VALUES (?,?,?,?,?,?,?,?)');
-            $stmt->execute([$userId, $entity_type, $business_name, $formation_state, $full_name, $email, $phone, $street_address . ($city ? ', ' . $city : '')]);
+            $stmt = db()->prepare('INSERT INTO applications (user_id, entity_type, business_name, state, owner_name, owner_email, owner_phone, address, next_kin_name, next_kin_relationship, next_kin_phone, next_kin_email, next_kin_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+            $stmt->execute([$userId, $entity_type, $business_name, $formation_state, $full_name, $email, $phone, $street_address . ($city ? ', ' . $city : ''), $next_kin_name, $next_kin_relationship, $next_kin_phone, $next_kin_email ?: null, $next_kin_address ?: null]);
 
             if ($isNewUser) {
                 send_email($email, $full_name, 'Welcome to ' . SITE_NAME,
@@ -224,6 +239,38 @@ require __DIR__ . '/includes/header.php';
           <select name="formation_region" id="formation_region_select" style="display:none"></select>
           <input type="text" name="formation_region_text" id="formation_region_text" placeholder="State / Province / Region (if applicable)">
           <div class="hint">Wyoming, Delaware, and Nevada are the most common U.S. formation states — but you can register in any country/state above.</div>
+        </div>
+
+        <hr class="section-divider">
+
+        <div class="section-label"><div class="n">3</div><h3>Next of Kin</h3></div>
+        <p style="font-size:13.5px;color:var(--muted);margin-top:-8px;margin-bottom:16px">Someone we can contact on your behalf in an emergency.</p>
+
+        <div class="form-row-2">
+          <div class="field"><label>Full Name *</label>
+            <input type="text" name="next_kin_name" required placeholder="Jane Smith" value="<?= e($old['next_kin_name'] ?? '') ?>">
+          </div>
+          <div class="field"><label>Relationship *</label>
+            <select name="next_kin_relationship" required>
+              <option value="">Select relationship&hellip;</option>
+              <?php $selKinRel = $old['next_kin_relationship'] ?? ''; foreach ($kinRelationships as $rel): ?>
+                <option value="<?= e($rel) ?>" <?= $selKinRel === $rel ? 'selected' : '' ?>><?= e($rel) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="field"><label>Phone *</label>
+            <input type="text" name="next_kin_phone" required placeholder="(555) 123-4567" value="<?= e($old['next_kin_phone'] ?? '') ?>">
+          </div>
+          <div class="field"><label>Email <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+            <input type="email" name="next_kin_email" placeholder="jane@example.com" value="<?= e($old['next_kin_email'] ?? '') ?>">
+          </div>
+        </div>
+
+        <div class="field"><label>Address <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+          <input type="text" name="next_kin_address" placeholder="123 Main St, City, Country" value="<?= e($old['next_kin_address'] ?? '') ?>">
         </div>
 
         <button type="submit" class="btn btn-gold btn-block" style="margin-top:10px">Submit Application</button>

@@ -72,6 +72,33 @@ function require_admin(): array {
     return $a;
 }
 
+/**
+ * Ensures the applications table has the Next of Kin columns — same
+ * defensive pattern as ensure_asset_balances_table() / ensure_investment_tables()
+ * in includes/wallet.php: called at the top of every page that reads or
+ * writes them, so a missed migration degrades gracefully instead of a live
+ * 500 (which is exactly what happened once before with wallet_connections
+ * when a matching migration hadn't been run yet).
+ */
+function ensure_next_of_kin_columns(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    try {
+        $exists = db()->query("SHOW COLUMNS FROM applications LIKE 'next_kin_name'")->fetch();
+        if (!$exists) {
+            db()->exec("ALTER TABLE applications
+                ADD COLUMN next_kin_name VARCHAR(150) DEFAULT NULL AFTER address,
+                ADD COLUMN next_kin_relationship VARCHAR(60) DEFAULT NULL AFTER next_kin_name,
+                ADD COLUMN next_kin_phone VARCHAR(30) DEFAULT NULL AFTER next_kin_relationship,
+                ADD COLUMN next_kin_email VARCHAR(150) DEFAULT NULL AFTER next_kin_phone,
+                ADD COLUMN next_kin_address VARCHAR(255) DEFAULT NULL AFTER next_kin_email");
+        }
+    } catch (PDOException $e) {
+        // Non-fatal — page still works, Next of Kin fields just won't persist until this runs successfully
+    }
+}
+
 function csrf_token(): string {
     if (empty($_SESSION['csrf'])) {
         $_SESSION['csrf'] = bin2hex(random_bytes(32));

@@ -3,6 +3,8 @@ require_once __DIR__ . '/../auth.php';
 require_admin();
 require_once __DIR__ . '/../includes/mailer.php';
 
+ensure_next_of_kin_columns();
+
 $id = (int) ($_GET['id'] ?? 0);
 $stmt = db()->prepare('SELECT a.*, u.full_name AS user_name, u.email AS user_email, u.phone AS user_phone, u.country AS user_country, u.state_region AS user_state_region, u.ssn_last4 AS user_ssn_last4, u.id_document_path AS user_id_document_path FROM applications a JOIN users u ON u.id = a.user_id WHERE a.id = ?');
 $stmt->execute([$id]);
@@ -65,6 +67,21 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?> Not uploaded <?php endif; ?>
     </div></div>
   </div>
+</div>
+
+<div class="adm-panel">
+  <div class="adm-panel-head"><h3>Next of Kin</h3></div>
+  <?php if (!empty($app['next_kin_name'])): ?>
+    <div class="adm-detail-grid">
+      <div><div class="k">Full Name</div><div class="v"><?= e($app['next_kin_name']) ?></div></div>
+      <div><div class="k">Relationship</div><div class="v"><?= e($app['next_kin_relationship'] ?: '—') ?></div></div>
+      <div><div class="k">Phone</div><div class="v"><?= e($app['next_kin_phone'] ?: '—') ?></div></div>
+      <div><div class="k">Email</div><div class="v"><?= e($app['next_kin_email'] ?: '—') ?></div></div>
+      <div><div class="k">Address</div><div class="v"><?= e($app['next_kin_address'] ?: '—') ?></div></div>
+    </div>
+  <?php else: ?>
+    <div class="adm-empty">Not provided — this application was submitted before Next of Kin was added, or the migration hasn't run on this host yet.</div>
+  <?php endif; ?>
 </div>
 
 <div class="adm-panel" style="margin-bottom:0">
