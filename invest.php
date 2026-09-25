@@ -181,8 +181,7 @@ require __DIR__ . '/includes/dash_header.php';
   </div>
 
   <div class="panel roi-form-panel" id="roiFormPanel" style="display:none">
-    <h3 style="margin-bottom:4px;text-align:center" id="roiFormTitle">Lock Funds</h3>
-    <p style="text-align:center;font-size:13.5px;margin-bottom:18px">This is a demo feature &mdash; no real crypto is locked.</p>
+    <h3 style="margin-bottom:18px;text-align:center" id="roiFormTitle">Lock Funds</h3>
 
     <?php if (!$fundingAssets): ?>
       <div class="alert alert-info">You don't have a funded asset yet. <a href="buy.php" style="font-weight:700">Buy crypto</a> or <a href="receive.php" style="font-weight:700">receive funds</a> first, then come back to invest.</div>
