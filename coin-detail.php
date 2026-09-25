@@ -136,34 +136,6 @@ require __DIR__ . '/includes/dash_header.php';
   </a>
 </div>
 
-<!-- ── Add Balance form ── -->
-<div class="cd-add-balance-panel" id="cdAddBalancePanel">
-  <div class="cd-add-balance-sub">
-    Current price: <strong id="cdPriceForCalc">loading…</strong><br>
-    <?php if ($existingCrypto > 0): ?>
-      Existing balance: <span id="cdExistingHint"><?= rtrim(rtrim(number_format($existingCrypto, 10), '0'), '.') ?> <?= e($ticker) ?> (<span id="cdExistingUsdHint">…</span>)</span>
-    <?php else: ?>
-      <span style="color:var(--muted)">No balance yet — add your first deposit below.</span>
-    <?php endif; ?>
-  </div>
-
-  <!-- Success message (hidden by default) -->
-  <div class="cd-success-msg" id="cdSuccessMsg" style="display:none"></div>
-
-  <div class="cd-add-balance-form">
-    <div class="cd-input-group">
-      <span class="cd-input-prefix">$</span>
-      <input type="number" id="cdUsdInput" min="0.01" step="0.01" placeholder="Amount in USD" class="cd-usd-input">
-    </div>
-    <div class="cd-calc-preview" id="cdCalcPreview" style="display:none">
-      ≈ <span id="cdCryptoPreview">0</span> <?= e($ticker) ?>
-    </div>
-    <button class="cd-add-btn" id="cdAddBtn" onclick="cdSubmitBalance()">
-      Add <?= e($coinName) ?> Balance
-    </button>
-  </div>
-</div>
-
 <!-- ── Recent transactions for this coin ── -->
 <?php
 $txStmt = db()->prepare("SELECT * FROM transactions WHERE user_id = ? AND asset = ? ORDER BY created_at DESC LIMIT 20");
@@ -195,10 +167,7 @@ $coinTxs = $txStmt->fetchAll();
 <script>
 (function() {
   var TICKER     = <?= json_encode($ticker) ?>;
-  var COIN_NAME  = <?= json_encode($coinName) ?>;
-  var CSRF       = <?= json_encode(csrf_token()) ?>;
   var existingCrypto = <?= json_encode($existingCrypto) ?>;
-  var existingUsd    = <?= json_encode($existingUsd) ?>;
   var livePrice  = 0;
 
   // CoinGecko id map
@@ -212,10 +181,6 @@ $coinTxs = $txStmt->fetchAll();
     USDC:'usd-coin'
   };
 
-  function fmtCrypto(n) {
-    if (n === 0) return '0';
-    return parseFloat(n.toFixed(10)).toString();
-  }
   function fmtUsd(n) {
     return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
@@ -238,88 +203,14 @@ $coinTxs = $txStmt->fetchAll();
         chEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '% (24h)';
         chEl.className   = 'cd-price-change ' + (change >= 0 ? 'up' : 'down');
 
-        // Show price in add-balance panel
-        document.getElementById('cdPriceForCalc').textContent =
-          '$' + livePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits: livePrice < 1 ? 6 : 2});
-
         // Update live USD value of existing crypto balance
         if (existingCrypto > 0 && livePrice > 0) {
           var liveUsd = existingCrypto * livePrice;
           document.getElementById('cdUsdValue').textContent = fmtUsd(liveUsd);
-          var hintEl = document.getElementById('cdExistingUsdHint');
-          if (hintEl) hintEl.textContent = fmtUsd(liveUsd);
         }
       })
-      .catch(function(){
-        document.getElementById('cdPriceForCalc').textContent = 'price unavailable';
-      });
+      .catch(function(){});
   }
-
-  // ── Live calc preview ───────────────────────────────────────────────────────
-  var usdInput   = document.getElementById('cdUsdInput');
-  var calcPreview= document.getElementById('cdCalcPreview');
-  var cryptoPreview = document.getElementById('cdCryptoPreview');
-
-  usdInput.addEventListener('input', function() {
-    var usd = parseFloat(usdInput.value);
-    if (usd > 0 && livePrice > 0) {
-      cryptoPreview.textContent = fmtCrypto(usd / livePrice);
-      calcPreview.style.display = 'block';
-    } else {
-      calcPreview.style.display = 'none';
-    }
-  });
-
-  // ── Submit balance ──────────────────────────────────────────────────────────
-  window.cdSubmitBalance = function() {
-    var usd = parseFloat(usdInput.value);
-    if (!usd || usd <= 0) { alert('Please enter a valid USD amount.'); return; }
-    if (livePrice <= 0)   { alert('Price not loaded yet, please wait a moment.'); return; }
-
-    var btn = document.getElementById('cdAddBtn');
-    btn.disabled    = true;
-    btn.textContent = 'Adding…';
-
-    var fd = new FormData();
-    fd.append('action',     'upsert');
-    fd.append('csrf',       CSRF);
-    fd.append('symbol',     TICKER);
-    fd.append('asset_name', COIN_NAME);
-    fd.append('add_usd',    usd.toString());
-    fd.append('coin_price', livePrice.toString());
-
-    fetch('api/asset-balance.php', { method:'POST', body: fd })
-      .then(function(r){ return r.json(); })
-      .then(function(res) {
-        btn.disabled    = false;
-        btn.textContent = 'Add ' + COIN_NAME + ' Balance';
-        if (!res.ok) { alert(res.error || 'Error saving balance'); return; }
-
-        // Update display
-        existingCrypto = res.crypto_amount;
-        existingUsd    = res.demo_usd_amount;
-
-        document.getElementById('cdCryptoDisplay').textContent =
-          fmtCrypto(existingCrypto) + ' ' + TICKER;
-
-        var liveUsdVal = livePrice > 0 ? existingCrypto * livePrice : existingUsd;
-        document.getElementById('cdUsdValue').textContent = fmtUsd(liveUsdVal);
-
-        // Success message
-        var msg = document.getElementById('cdSuccessMsg');
-        msg.innerHTML = '&#10003; ' + res.message;
-        msg.style.display = 'block';
-        setTimeout(function(){ msg.style.display = 'none'; }, 4000);
-
-        usdInput.value          = '';
-        calcPreview.style.display = 'none';
-      })
-      .catch(function() {
-        btn.disabled    = false;
-        btn.textContent = 'Add ' + COIN_NAME + ' Balance';
-        alert('Network error, please try again.');
-      });
-  };
 })();
 </script>
 
