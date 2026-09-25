@@ -264,12 +264,12 @@ require __DIR__ . '/includes/header.php';
           <div class="field"><label>Phone *</label>
             <input type="text" name="next_kin_phone" required placeholder="(555) 123-4567" value="<?= e($old['next_kin_phone'] ?? '') ?>">
           </div>
-          <div class="field"><label>Email <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+          <div class="field"><label>Email</label>
             <input type="email" name="next_kin_email" placeholder="jane@example.com" value="<?= e($old['next_kin_email'] ?? '') ?>">
           </div>
         </div>
 
-        <div class="field"><label>Address <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <div class="field"><label>Address</label>
           <input type="text" name="next_kin_address" placeholder="123 Main St, City, Country" value="<?= e($old['next_kin_address'] ?? '') ?>">
         </div>
 
