@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
         $maxRaw      = trim($_POST['max_amount_usd'] ?? '');
         $max         = $maxRaw === '' ? null : (float) $maxRaw;
         $status      = ($_POST['status'] ?? 'inactive') === 'active' ? 'active' : 'inactive';
+        $isPopular   = !empty($_POST['is_popular']) ? 1 : 0;
         $sortOrder   = (int) ($_POST['sort_order'] ?? 0);
 
         if ($name === '') {
@@ -31,15 +32,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_check()) {
         } elseif ($max !== null && $max <= $min) {
             flash_set('Maximum amount must be greater than the minimum.', 'error');
         } else {
+            // Only one plan is "Most Popular" at a time.
+            if ($isPopular) {
+                db()->exec('UPDATE investment_plans SET is_popular = 0');
+            }
             if ($id > 0) {
-                db()->prepare('UPDATE investment_plans SET name=?, description=?, duration_days=?, interest_rate_percent=?, min_amount_usd=?, max_amount_usd=?, status=?, sort_order=?, updated_at=NOW() WHERE id=?')
-                    ->execute([$name, $description ?: null, $duration, $rate, $min, $max, $status, $sortOrder, $id]);
+                db()->prepare('UPDATE investment_plans SET name=?, description=?, duration_days=?, interest_rate_percent=?, min_amount_usd=?, max_amount_usd=?, status=?, is_popular=?, sort_order=?, updated_at=NOW() WHERE id=?')
+                    ->execute([$name, $description ?: null, $duration, $rate, $min, $max, $status, $isPopular, $sortOrder, $id]);
                 flash_set('Plan "' . $name . '" updated.');
             } else {
-                db()->prepare('INSERT INTO investment_plans (name, description, duration_days, interest_rate_percent, min_amount_usd, max_amount_usd, status, sort_order) VALUES (?,?,?,?,?,?,?,?)')
-                    ->execute([$name, $description ?: null, $duration, $rate, $min, $max, $status, $sortOrder]);
+                db()->prepare('INSERT INTO investment_plans (name, description, duration_days, interest_rate_percent, min_amount_usd, max_amount_usd, status, is_popular, sort_order) VALUES (?,?,?,?,?,?,?,?,?)')
+                    ->execute([$name, $description ?: null, $duration, $rate, $min, $max, $status, $isPopular, $sortOrder]);
                 flash_set('Plan "' . $name . '" created.');
             }
+        }
+    } elseif ($action === 'set_popular') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $stmt = db()->prepare('SELECT name FROM investment_plans WHERE id = ?');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            db()->exec('UPDATE investment_plans SET is_popular = 0');
+            db()->prepare('UPDATE investment_plans SET is_popular = 1, updated_at = NOW() WHERE id = ?')->execute([$id]);
+            flash_set($row['name'] . ' is now marked Most Popular.');
         }
     } elseif ($action === 'toggle') {
         $id = (int) ($_POST['id'] ?? 0);
@@ -104,8 +119,8 @@ require __DIR__ . '/includes/header.php';
       </div>
 
       <div class="adm-field"><label>Duration (Days) <span class="req">*</span></label>
-        <input type="number" name="duration_days" min="1" required value="<?= e($editPlan['duration_days'] ?? '30') ?>">
-        <div class="hint">How long funds stay locked before a user can claim.</div>
+        <input type="number" name="duration_days" min="1" required value="<?= e($editPlan['duration_days'] ?? '365') ?>">
+        <div class="hint">How long funds stay locked before a user can claim (e.g. 365 for 1 year, 90 for 90 days) &mdash; shown to users as "<?= isset($editPlan['duration_days']) ? e(roi_duration_label((int) $editPlan['duration_days'])) : '1 Year' ?>".</div>
       </div>
 
       <div class="adm-field"><label>Interest Rate (%) <span class="req">*</span></label>
@@ -135,6 +150,14 @@ require __DIR__ . '/includes/header.php';
         </div>
       </div>
 
+      <div class="adm-field">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+          <input type="checkbox" name="is_popular" value="1" style="width:16px;height:16px" <?= !empty($editPlan['is_popular']) ? 'checked' : '' ?>>
+          Mark as "Most Popular"
+        </label>
+        <div class="hint">Shows a gold ribbon on this plan's card. Only one plan can be marked at a time &mdash; checking this unchecks it on any other plan.</div>
+      </div>
+
       <button type="submit" class="adm-btn adm-btn-primary adm-btn-block"><?= $editPlan ? 'Save Changes' : 'Create Plan' ?></button>
     </form>
   </div>
@@ -159,16 +182,28 @@ require __DIR__ . '/includes/header.php';
   <?php else: ?>
     <div class="adm-table-wrap">
       <table class="adm-table">
-        <thead><tr><th>Plan</th><th>Term</th><th>Rate</th><th>Min</th><th>Max</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Plan</th><th>Term</th><th>Rate</th><th>Min</th><th>Max</th><th>Status</th><th>Popular</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($plans as $p): ?>
             <tr>
               <td><strong><?= e($p['name']) ?></strong><?php if ($p['description']): ?><div class="adm-cell-sub"><?= e($p['description']) ?></div><?php endif; ?></td>
-              <td><?= (int) $p['duration_days'] ?> days</td>
+              <td><?= e(roi_duration_label((int) $p['duration_days'])) ?></td>
               <td><?= e(rtrim(rtrim(number_format((float) $p['interest_rate_percent'], 2), '0'), '.')) ?>%</td>
               <td><?= fmt_money((float) $p['min_amount_usd']) ?></td>
               <td><?= $p['max_amount_usd'] !== null ? fmt_money((float) $p['max_amount_usd']) : 'No limit' ?></td>
               <td><?= badge_for_status($p['status'], ['active' => 'Active', 'inactive' => 'Inactive']) ?></td>
+              <td>
+                <?php if ($p['is_popular']): ?>
+                  <span class="adm-badge adm-badge-amber">&#9733; Popular</span>
+                <?php else: ?>
+                  <form method="post" style="display:inline">
+                    <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="action" value="set_popular">
+                    <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+                    <button type="submit" class="adm-btn adm-btn-outline adm-btn-sm">Mark Popular</button>
+                  </form>
+                <?php endif; ?>
+              </td>
               <td style="white-space:nowrap">
                 <a href="investment-plans.php?edit=<?= (int) $p['id'] ?>" class="adm-btn adm-btn-outline adm-btn-sm">Edit</a>
                 <form method="post" style="display:inline">

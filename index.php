@@ -2,6 +2,10 @@
 $__base = '';
 $pageTitle = 'Business Formation';
 require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/wallet.php';
+ensure_investment_tables();
+$__roiPlans = db()->query("SELECT * FROM investment_plans WHERE status = 'active' ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+$__roiCta = $__user ? 'invest.php' : ('login.php?next=' . urlencode('invest.php'));
 ?>
 <section class="hero">
   <div class="container">
@@ -71,6 +75,33 @@ require __DIR__ . '/includes/header.php';
     </div>
   </div>
 </section>
+
+<?php if ($__roiPlans): ?>
+<section class="section" id="crypto-roi">
+  <div class="container">
+    <div class="section-head">
+      <h2>Crypto ROI &mdash; Fixed-Term Investment Plans</h2>
+      <p>Lock your crypto for a fixed term and earn interest at maturity. Choose the plan that fits your goals.</p>
+    </div>
+    <div class="roi-plan-grid">
+      <?php foreach ($__roiPlans as $p): $isPopular = (bool) $p['is_popular']; ?>
+        <div class="roi-plan-card<?= $isPopular ? ' roi-popular' : '' ?>">
+          <?php if ($isPopular): ?><span class="roi-popular-tag">Most Popular</span><?php endif; ?>
+          <h3 class="roi-plan-name"><?= e($p['name']) ?></h3>
+          <p class="roi-plan-desc"><?= e($p['description'] ?? '') ?></p>
+          <div class="roi-plan-rate"><?= e(rtrim(rtrim(number_format((float) $p['interest_rate_percent'], 2), '0'), '.')) ?>%<small> at maturity</small></div>
+          <ul class="roi-plan-meta">
+            <li><span class="k">Term</span><span class="v"><?= e(roi_duration_label((int) $p['duration_days'])) ?></span></li>
+            <li><span class="k">Minimum</span><span class="v"><?= fmt_money((float) $p['min_amount_usd']) ?></span></li>
+            <li><span class="k">Maximum</span><span class="v"><?= $p['max_amount_usd'] !== null ? fmt_money((float) $p['max_amount_usd']) : 'No limit' ?></span></li>
+          </ul>
+          <a href="<?= e($__roiCta) ?>" class="btn btn-gold btn-block" data-loader-label="Loading&hellip;">Get Started &rarr;</a>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
 
 <section class="section">
   <div class="container">

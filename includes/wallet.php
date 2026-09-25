@@ -256,6 +256,19 @@ function tx_label(string $type): array {
     };
 }
 
+/** Human-friendly term label for a Crypto ROI plan's duration, e.g. 365 -> "1 Year", 90 -> "90 Days". */
+function roi_duration_label(int $days): string {
+    if ($days > 0 && $days % 365 === 0) {
+        $years = intdiv($days, 365);
+        return $years . ' Year' . ($years > 1 ? 's' : '');
+    }
+    if ($days > 0 && $days % 30 === 0 && $days >= 30) {
+        $months = intdiv($days, 30);
+        return $months . ' Month' . ($months > 1 ? 's' : '');
+    }
+    return $days . ' Day' . ($days !== 1 ? 's' : '');
+}
+
 /**
  * Logs a Crypto ROI (invest.php) transaction. Wrapped separately from
  * log_transaction() because the 'roi_lock' / 'roi_payout' type values need
@@ -293,10 +306,19 @@ function ensure_investment_tables(): void {
             min_amount_usd        DECIMAL(18,2)  NOT NULL DEFAULT 100.00,
             max_amount_usd        DECIMAL(18,2)  DEFAULT NULL,
             status                ENUM('active','inactive') NOT NULL DEFAULT 'inactive',
+            is_popular            TINYINT(1)     NOT NULL DEFAULT 0,
             sort_order            INT            NOT NULL DEFAULT 0,
             created_at            DATETIME       DEFAULT CURRENT_TIMESTAMP,
             updated_at            DATETIME       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // is_popular was added after investment_plans first shipped — on a
+        // host where the table already exists without it, add it here too
+        // (same self-heal pattern as ensure_next_of_kin_columns() in auth.php).
+        $hasPopularCol = db()->query("SHOW COLUMNS FROM investment_plans LIKE 'is_popular'")->fetch();
+        if (!$hasPopularCol) {
+            db()->exec("ALTER TABLE investment_plans ADD COLUMN is_popular TINYINT(1) NOT NULL DEFAULT 0 AFTER status");
+        }
 
         // plan_id is a soft reference (no FK) — each investment snapshots its
         // own plan_name/rate/duration at lock time, so an admin can still
@@ -324,10 +346,10 @@ function ensure_investment_tables(): void {
         $count = (int) db()->query('SELECT COUNT(*) FROM investment_plans')->fetchColumn();
         if ($count === 0) {
             db()->exec("INSERT INTO investment_plans
-                (name, description, duration_days, interest_rate_percent, min_amount_usd, max_amount_usd, status, sort_order) VALUES
-                ('Starter Lock', 'A short, low-commitment way to try Crypto ROI.', 30, 8.00, 100.00, 4999.00, 'inactive', 1),
-                ('Growth Lock', 'Our most popular plan — a balanced term and rate.', 90, 20.00, 500.00, 24999.00, 'inactive', 2),
-                ('Elite Lock', 'Maximum return for longer-term holders.', 180, 45.00, 2000.00, NULL, 'inactive', 3)");
+                (name, description, duration_days, interest_rate_percent, min_amount_usd, max_amount_usd, status, is_popular, sort_order) VALUES
+                ('Starter Lock', 'A low-commitment way to try Crypto ROI.', 365, 5.00, 100.00, 4999.00, 'inactive', 0, 1),
+                ('Growth Lock', 'Our most popular plan — a balanced return for a full year.', 365, 8.00, 5000.00, 50000.00, 'inactive', 1, 2),
+                ('Elite Lock', 'Maximum return for our largest holders.', 365, 15.00, 50000.00, NULL, 'inactive', 0, 3)");
         }
     } catch (PDOException $e) {
         // Non-fatal: fall through — queries will return empty results gracefully

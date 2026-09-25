@@ -142,16 +142,6 @@ $myInvStmt = db()->prepare('SELECT * FROM investments WHERE user_id = ? ORDER BY
 $myInvStmt->execute([$user['id']]);
 $myInvestments = $myInvStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Index of the plan with the highest interest rate gets the "Most Popular" ribbon.
-$popularPlanId = null;
-if ($plans) {
-    $best = $plans[0];
-    foreach ($plans as $p) {
-        if ((float) $p['interest_rate_percent'] > (float) $best['interest_rate_percent']) $best = $p;
-    }
-    $popularPlanId = count($plans) > 1 ? (int) $best['id'] : null;
-}
-
 $pageTitle = 'Crypto ROI';
 require __DIR__ . '/includes/dash_header.php';
 ?>
@@ -168,14 +158,14 @@ require __DIR__ . '/includes/dash_header.php';
 <?php else: ?>
 
   <div class="roi-plan-grid">
-    <?php foreach ($plans as $p): $isPopular = (int) $p['id'] === $popularPlanId; ?>
+    <?php foreach ($plans as $p): $isPopular = (bool) $p['is_popular']; ?>
       <div class="roi-plan-card<?= $isPopular ? ' roi-popular' : '' ?>" data-plan-id="<?= (int) $p['id'] ?>">
         <?php if ($isPopular): ?><span class="roi-popular-tag">Most Popular</span><?php endif; ?>
         <h3 class="roi-plan-name"><?= e($p['name']) ?></h3>
         <p class="roi-plan-desc"><?= e($p['description'] ?? '') ?></p>
         <div class="roi-plan-rate"><?= e(rtrim(rtrim(number_format((float) $p['interest_rate_percent'], 2), '0'), '.')) ?>%<small> at maturity</small></div>
         <ul class="roi-plan-meta">
-          <li><span class="k">Term</span><span class="v"><?= (int) $p['duration_days'] ?> Days</span></li>
+          <li><span class="k">Term</span><span class="v"><?= e(roi_duration_label((int) $p['duration_days'])) ?></span></li>
           <li><span class="k">Minimum</span><span class="v"><?= fmt_money((float) $p['min_amount_usd']) ?></span></li>
           <li><span class="k">Maximum</span><span class="v"><?= $p['max_amount_usd'] !== null ? fmt_money((float) $p['max_amount_usd']) : 'No limit' ?></span></li>
         </ul>
@@ -240,7 +230,7 @@ require __DIR__ . '/includes/dash_header.php';
             $matured = $inv['status'] === 'active' && strtotime($inv['matures_at']) <= time();
           ?>
             <tr>
-              <td><strong><?= e($inv['plan_name']) ?></strong><div class="adm-cell-sub" style="font-size:12px;color:var(--muted)"><?= (int) $inv['duration_days'] ?> days &middot; <?= e(rtrim(rtrim(number_format((float) $inv['interest_rate_percent'], 2), '0'), '.')) ?>%</div></td>
+              <td><strong><?= e($inv['plan_name']) ?></strong><div class="adm-cell-sub" style="font-size:12px;color:var(--muted)"><?= e(roi_duration_label((int) $inv['duration_days'])) ?> &middot; <?= e(rtrim(rtrim(number_format((float) $inv['interest_rate_percent'], 2), '0'), '.')) ?>%</div></td>
               <td><?= e($inv['asset_symbol']) ?></td>
               <td><?= fmt_money((float) $inv['principal_usd']) ?></td>
               <td style="color:#15803d;font-weight:600">+<?= fmt_money((float) $inv['interest_usd']) ?></td>
@@ -290,6 +280,13 @@ require __DIR__ . '/includes/dash_header.php';
     return '$' + v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   }
 
+  // Mirrors roi_duration_label() in includes/wallet.php.
+  function fmtDuration(days) {
+    if (days > 0 && days % 365 === 0) { var y = days / 365; return y + ' Year' + (y > 1 ? 's' : ''); }
+    if (days > 0 && days % 30 === 0 && days >= 30) { var m = days / 30; return m + ' Month' + (m > 1 ? 's' : ''); }
+    return days + ' Day' + (days !== 1 ? 's' : '');
+  }
+
   function updateSummary() {
     if (!current) return;
     var avail = assetSel && assetSel.selectedOptions.length ? parseFloat(assetSel.selectedOptions[0].dataset.avail || '0') : 0;
@@ -307,7 +304,7 @@ require __DIR__ . '/includes/dash_header.php';
       var payout   = amt + interest;
       var maturesOn = new Date(Date.now() + current.duration * 86400000);
       summary.style.display = 'block';
-      summary.innerHTML = 'Lock <strong>' + fmtUsd(amt) + '</strong> for <strong>' + current.duration + ' days</strong> &mdash; ' +
+      summary.innerHTML = 'Lock <strong>' + fmtUsd(amt) + '</strong> for <strong>' + fmtDuration(current.duration) + '</strong> &mdash; ' +
         'matures ' + maturesOn.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) +
         ' with a payout of <strong>' + fmtUsd(payout) + '</strong> (' + fmtUsd(interest) + ' interest).';
     } else {
