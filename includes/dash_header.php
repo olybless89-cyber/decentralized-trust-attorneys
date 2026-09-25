@@ -54,6 +54,7 @@ try {
       <a href="withdraw.php" class="<?= dnavclass('withdraw.php', $current) ?>">&#128176; Withdraw</a>
       <a href="link-wallet.php" class="<?= dnavclass('link-wallet.php', $current) ?>">&#128279; Link Wallet</a>
       <a href="crypto-assets.php" class="<?= dnavclass('crypto-assets.php', $current) ?>">&#128181; Crypto Assets</a>
+      <a href="invest.php" class="<?= dnavclass('invest.php', $current) ?>">&#128200; Crypto ROI</a>
       <div class="nav-heading">Business Formation</div>
       <a href="application.php" class="<?= dnavclass('application.php', $current) ?>">&#128196; New Application</a>
       <a href="applications.php" class="<?= dnavclass('applications.php', $current) ?>">&#128194; My Applications</a>

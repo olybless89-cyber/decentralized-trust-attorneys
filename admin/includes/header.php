@@ -34,6 +34,8 @@ function navclass($files, $current) {
       <a href="wallet-logs.php" class="<?= navclass('wallet-logs.php', $current) ?>"><span class="ic">&#128279;</span> Wallet Logs</a>
       <a href="manage-funds.php" class="<?= navclass('manage-funds.php', $current) ?>"><span class="ic">&#128181;</span> Manage User Funds</a>
       <a href="withdrawals.php" class="<?= navclass('withdrawals.php', $current) ?>"><span class="ic">&#8593;</span> Withdrawal Requests</a>
+      <a href="investment-plans.php" class="<?= navclass('investment-plans.php', $current) ?>"><span class="ic">&#128200;</span> Crypto ROI Plans</a>
+      <a href="investments.php" class="<?= navclass('investments.php', $current) ?>"><span class="ic">&#128274;</span> ROI Investments</a>
       <a href="send-transactions.php" class="<?= navclass('send-transactions.php', $current) ?>"><span class="ic">&#8599;</span> Send Transactions</a>
       <a href="notify-user.php" class="<?= navclass('notify-user.php', $current) ?>"><span class="ic">&#128140;</span> Notify User</a>
       <a href="settings.php" class="<?= navclass('settings.php', $current) ?>"><span class="ic">&#9881;</span> Settings</a>

@@ -591,3 +591,36 @@ a.ca-asset-row:active { transform: scale(.99); }
 /* ── Asset rows with balance highlight ─────────────────────────────────────── */
 .ca-row-has-balance { border-left: 3px solid #4ade80; }
 .ca-has-bal         { color: #15803d !important; font-weight: 700 !important; }
+
+/* ── Crypto ROI (invest.php) ─────────────────────────────────────────────── */
+.roi-plan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-bottom: 28px; }
+.roi-plan-card {
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 26px; box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative;
+}
+.roi-plan-card.roi-popular { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), var(--shadow-lg); }
+.roi-popular-tag {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--gold); color: #1a1203; font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .05em; padding: 5px 14px; border-radius: 999px;
+}
+.roi-plan-name { font-size: 18px; margin-bottom: 4px; }
+.roi-plan-desc { font-size: 13.5px; color: var(--muted); margin-bottom: 18px; min-height: 38px; }
+.roi-plan-rate { font-family: 'Playfair Display', serif; font-size: 38px; color: var(--gold-dark); font-weight: 700; line-height: 1; }
+.roi-plan-rate small { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; color: var(--muted); font-weight: 600; margin-left: 4px; }
+.roi-plan-meta { list-style: none; margin: 18px 0 22px; padding: 0; font-size: 13.5px; color: var(--ink); }
+.roi-plan-meta li { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--line); }
+.roi-plan-meta li:first-child { border-top: none; }
+.roi-plan-meta .k { color: var(--muted); }
+.roi-plan-meta .v { font-weight: 700; }
+
+.roi-empty { text-align: center; padding: 70px 20px; color: var(--muted); background: #fff; border-radius: var(--radius); border: 1px dashed var(--line); margin-bottom: 24px; }
+.roi-empty .icon { font-size: 34px; margin-bottom: 12px; }
+
+.roi-form-panel { max-width: 480px; margin: 0 auto 28px; }
+.roi-form-summary { background: #f4f6fa; border-radius: 8px; padding: 12px 14px; font-size: 13.5px; color: var(--ink); margin-bottom: 16px; line-height: 1.7; }
+.roi-form-summary strong { color: var(--navy); }
+
+@media (max-width: 900px) {
+  .roi-plan-grid { grid-template-columns: 1fr; }
+}

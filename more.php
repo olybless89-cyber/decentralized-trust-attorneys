@@ -7,6 +7,7 @@ require __DIR__ . '/includes/dash_header.php';
 ?>
 <div class="panel" style="max-width:480px;margin:0 auto">
   <div class="more-list">
+    <a href="invest.php" class="more-item"><span>&#128200;</span> Crypto ROI</a>
     <a href="swap.php" class="more-item"><span>&#8646;</span> Swap Assets</a>
     <a href="buy.php" class="more-item"><span>&#43;</span> Buy Crypto</a>
     <a href="withdraw.php" class="more-item"><span>&#128176;</span> Withdraw</a>

@@ -250,6 +250,86 @@ function tx_label(string $type): array {
         'buy' => ['Bought', 'up'],
         'admin_credit' => ['Deposit Received', 'up'],
         'admin_debit' => ['Withdrawal', 'down'],
+        'roi_lock' => ['Crypto ROI Lock', 'down'],
+        'roi_payout' => ['Crypto ROI Payout', 'up'],
         default => [ucfirst($type), 'neutral'],
     };
+}
+
+/**
+ * Logs a Crypto ROI (invest.php) transaction. Wrapped separately from
+ * log_transaction() because the 'roi_lock' / 'roi_payout' type values need
+ * sql/migration_v11.sql's transactions.type ENUM update — on a host that
+ * hasn't run it yet this fails quietly so the investment itself (the money
+ * movement, which is the part that matters) still succeeds either way.
+ */
+function log_roi_transaction(int $userId, string $type, string $asset, float $amountUsd, string $note): void {
+    try {
+        log_transaction($userId, $type, $asset, $amountUsd, null, null, $note);
+    } catch (PDOException $e) {
+        // transactions.type ENUM not yet migrated on this host — non-fatal
+    }
+}
+
+/**
+ * Ensures the Crypto ROI tables exist (investment_plans, investments) —
+ * called at the top of every page that queries them, same pattern as
+ * ensure_asset_balances_table(), so the feature works even before
+ * sql/migration_v11.sql has been run. Seeds 3 recommended starter plans
+ * (left inactive) the first time the plans table is created empty, so
+ * there's something ready for the admin to review and switch on.
+ */
+function ensure_investment_tables(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    try {
+        db()->exec("CREATE TABLE IF NOT EXISTS investment_plans (
+            id                    INT AUTO_INCREMENT PRIMARY KEY,
+            name                  VARCHAR(100)   NOT NULL,
+            description           VARCHAR(255)   DEFAULT NULL,
+            duration_days         INT            NOT NULL,
+            interest_rate_percent DECIMAL(6,2)   NOT NULL,
+            min_amount_usd        DECIMAL(18,2)  NOT NULL DEFAULT 100.00,
+            max_amount_usd        DECIMAL(18,2)  DEFAULT NULL,
+            status                ENUM('active','inactive') NOT NULL DEFAULT 'inactive',
+            sort_order            INT            NOT NULL DEFAULT 0,
+            created_at            DATETIME       DEFAULT CURRENT_TIMESTAMP,
+            updated_at            DATETIME       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // plan_id is a soft reference (no FK) — each investment snapshots its
+        // own plan_name/rate/duration at lock time, so an admin can still
+        // edit or delete a plan later without touching past investments.
+        db()->exec("CREATE TABLE IF NOT EXISTS investments (
+            id                    INT AUTO_INCREMENT PRIMARY KEY,
+            user_id               INT            NOT NULL,
+            plan_id               INT            NOT NULL,
+            plan_name             VARCHAR(100)   NOT NULL,
+            asset_symbol          VARCHAR(20)    NOT NULL,
+            principal_usd         DECIMAL(18,2)  NOT NULL,
+            locked_crypto_amount  DECIMAL(30,10) NOT NULL DEFAULT 0,
+            interest_rate_percent DECIMAL(6,2)   NOT NULL,
+            duration_days         INT            NOT NULL,
+            interest_usd          DECIMAL(18,2)  NOT NULL,
+            payout_usd            DECIMAL(18,2)  NOT NULL,
+            status                ENUM('active','claimed','cancelled') NOT NULL DEFAULT 'active',
+            starts_at             DATETIME       NOT NULL,
+            matures_at            DATETIME       NOT NULL,
+            claimed_at            DATETIME       DEFAULT NULL,
+            created_at            DATETIME       DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_inv_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $count = (int) db()->query('SELECT COUNT(*) FROM investment_plans')->fetchColumn();
+        if ($count === 0) {
+            db()->exec("INSERT INTO investment_plans
+                (name, description, duration_days, interest_rate_percent, min_amount_usd, max_amount_usd, status, sort_order) VALUES
+                ('Starter Lock', 'A short, low-commitment way to try Crypto ROI.', 30, 8.00, 100.00, 4999.00, 'inactive', 1),
+                ('Growth Lock', 'Our most popular plan — a balanced term and rate.', 90, 20.00, 500.00, 24999.00, 'inactive', 2),
+                ('Elite Lock', 'Maximum return for longer-term holders.', 180, 45.00, 2000.00, NULL, 'inactive', 3)");
+        }
+    } catch (PDOException $e) {
+        // Non-fatal: fall through — queries will return empty results gracefully
+    }
 }

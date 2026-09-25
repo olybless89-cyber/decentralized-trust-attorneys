@@ -123,6 +123,17 @@ function fmt_money(float $n): string {
     return '$' . number_format($n, 2);
 }
 
+/** Status pill for a user's Crypto ROI investment row (invest.php), matching the status_badge()/wd_status_badge() styling above. */
+function roi_status_badge(string $status): string {
+    $map = [
+        'active'    => ['Active', '#1d4ed8', '#dbeafe'],
+        'claimed'   => ['Claimed', '#15803d', '#dcfce7'],
+        'cancelled' => ['Cancelled', '#b91c1c', '#fee2e2'],
+    ];
+    [$label, $fg, $bg] = $map[$status] ?? [ucfirst($status), '#334155', '#e2e8f0'];
+    return '<span class="badge" style="color:' . $fg . ';background:' . $bg . '">' . $label . '</span>';
+}
+
 /**
  * Generic status pill for the redesigned admin panel — maps a raw status
  * value to a human label and a color, using the shared .adm-badge classes.
@@ -132,6 +143,7 @@ function badge_for_status(string $status, array $labels = []): string {
         'pending' => 'amber', 'in_review' => 'blue',
         'approved' => 'green', 'declined' => 'red', 'rejected' => 'red',
         'success' => 'green', 'completed' => 'green', 'failed' => 'red',
+        'active' => 'blue', 'claimed' => 'green', 'cancelled' => 'red',
     ][$status] ?? 'gray';
     $label = $labels[$status] ?? ucfirst(str_replace('_', ' ', $status));
     return '<span class="adm-badge adm-badge-' . $tone . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>';
