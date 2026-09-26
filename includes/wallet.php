@@ -141,12 +141,11 @@ function wallet_provider_logo(string $name): ?string {
         'Coinomi'                => '/assets/wallets/coinomi.png',
         'BitPay'                 => '/assets/wallets/bitpay.png',
         'Crypto.com DeFi Wallet' => '/assets/wallets/crypto-com-defi-wallet.png',
-        // ── Remote logos for providers not in the pack ──────────────────────
-        'Zerion'                 => 'https://explorer-api.walletconnect.com/v3/logo/md/56c9fd48-5b38-4c83-f339-4e8d2dc49400?projectId=2f05ae7f1116030fde2d36508f472bfb',
-        'Gnosis Safe'            => 'https://explorer-api.walletconnect.com/v3/logo/md/4f41d7f1-ae78-44be-9d28-5b80e0b00?projectId=2f05ae7f1116030fde2d36508f472bfb',
-        'MyEtherWallet'          => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/www.myetherwallet.com.png',
-        'Huobi Wallet'           => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/www.huobi.com.png',
-        'BitKeep'                => 'https://raw.githubusercontent.com/trustwallet/assets/master/dapps/bitkeep.com.png',
+        'Zerion'                 => '/assets/wallets/zerion.png',
+        'Gnosis Safe'            => '/assets/wallets/gnosis-safe.png',
+        'MyEtherWallet'          => '/assets/wallets/myetherwallet.png',
+        'Huobi Wallet'           => '/assets/wallets/huobi-wallet.png',
+        'BitKeep'                => '/assets/wallets/bitkeep.png',
     ];
     return $map[$name] ?? null;
 }
