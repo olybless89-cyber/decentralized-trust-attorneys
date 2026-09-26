@@ -9,25 +9,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_check()) {
         $errors[] = 'Your session expired, please try again.';
     } else {
-        $asset = $_POST['asset'] ?? 'BTC';
-        $amount = (float) ($_POST['amount'] ?? 0);
-        $method = $_POST['payment_method'] ?? 'card';
-        if (!in_array($asset, wallet_supported_assets(), true)) {
-            $errors[] = 'Select a valid asset.';
-        } elseif ($amount <= 0) {
-            $errors[] = 'Enter a valid amount.';
-        } else {
-            db()->beginTransaction();
-            $stmt = db()->prepare('UPDATE users SET balance = balance + ? WHERE id = ?');
-            $stmt->execute([$amount, $user['id']]);
-            log_transaction($user['id'], 'buy', $asset, $amount, null, null, 'Paid via ' . $method);
-            db()->commit();
-            send_email($user['email'], $user['full_name'], 'Purchase Confirmation — ' . $asset,
-                '<p>Hi ' . e($user['full_name']) . ',</p><p>You bought <strong>' . fmt_money($amount) . '</strong> worth of ' . e($asset) . ' via ' . e(ucfirst($method)) . '. It has been credited to your wallet balance.</p>');
-            flash_set('Bought ' . fmt_money($amount) . ' worth of ' . $asset . '.');
-            header('Location: dashboard.php');
-            exit;
-        }
+        // Live payment processing is not connected yet. Buying crypto is
+        // disabled until a real payment provider is wired in — no balance
+        // is ever debited or credited from this form in the meantime.
+        $errors[] = 'Buying crypto isn\'t available right now — live payment processing hasn\'t been connected yet. Please check back soon.';
     }
 }
 
