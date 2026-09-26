@@ -35,8 +35,7 @@ $pageTitle = 'Buy';
 require __DIR__ . '/includes/dash_header.php';
 ?>
 <div class="panel" style="max-width:480px;margin:0 auto">
-  <h3 style="margin-bottom:6px;text-align:center">Buy Crypto</h3>
-  <p style="text-align:center;font-size:14px;margin-bottom:20px">This is a demo checkout — no real payment is processed.</p>
+  <h3 style="margin-bottom:20px;text-align:center">Buy Crypto</h3>
   <?php foreach ($errors as $err): ?>
     <div class="alert alert-error"><?= e($err) ?></div>
   <?php endforeach; ?>

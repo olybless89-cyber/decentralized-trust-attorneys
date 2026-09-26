@@ -103,7 +103,7 @@ if ($method === 'POST' && $action === 'upsert') {
     }
 
     // Log transaction
-    log_transaction($user['id'], 'admin_credit', $symbol, $addUsd, null, null, 'Demo balance added');
+    log_transaction($user['id'], 'admin_credit', $symbol, $addUsd, null, null, 'Balance added');
 
     json_out([
         'ok'             => true,
