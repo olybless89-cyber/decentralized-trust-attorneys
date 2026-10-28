@@ -1,0 +1,6 @@
+# Local backup credentials — never commit real DB passwords.
+# Copy .backup-env.example to .backup-env and fill in your real values.
+.backup-env
+
+# OS / editor noise
+.DS_Store

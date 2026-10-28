@@ -1,0 +1,15 @@
+# Copy this file to .backup-env (same folder) and fill in the real values.
+# .backup-env is git-ignored — it will never be committed, so it's safe to
+# put your real database password in it.
+#
+# Where to find these on Railway:
+#   Your project -> the MySQL service -> "Connect" tab -> "Public Network".
+#   (NOT the internal MYSQLHOST values used by the app itself — those only
+#   work inside Railway's network. You need the public TCP proxy host/port
+#   shown on that Connect tab for this script to reach it from your Mac.)
+
+DB_HOST="your-mysql-public-host.proxy.rlwy.net"
+DB_PORT="12345"
+DB_NAME="railway"
+DB_USER="root"
+DB_PASS="your-mysql-password"
