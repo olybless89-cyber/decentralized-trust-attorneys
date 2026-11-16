@@ -1,0 +1,5 @@
+.git
+.gitignore
+backups/*.sql
+.backup-env
+.DS_Store

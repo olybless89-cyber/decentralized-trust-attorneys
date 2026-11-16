@@ -1,0 +1,50 @@
+services:
+  # MySQL database, running as a private service from the official image,
+  # with a persistent disk so data survives restarts/redeploys.
+  # Render has no managed MySQL product — this replaces Railway's MySQL
+  # plugin that the app used before.
+  - type: pserv
+    name: dta-mysql
+    runtime: image
+    plan: starter
+    image:
+      url: docker.io/library/mysql:8.0
+    disk:
+      name: dta-mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 1
+    envVars:
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+      - key: MYSQL_DATABASE
+        value: dta
+
+  # The PHP app itself, built from the repo's Dockerfile.
+  - type: web
+    name: decentralized-trust-attorneys
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: MYSQLHOST
+        fromService:
+          type: pserv
+          name: dta-mysql
+          property: host
+      - key: MYSQLPORT
+        fromService:
+          type: pserv
+          name: dta-mysql
+          property: port
+      - key: MYSQLDATABASE
+        value: dta
+      - key: MYSQLUSER
+        value: root
+      - key: MYSQLPASSWORD
+        fromService:
+          type: pserv
+          name: dta-mysql
+          envVarKey: MYSQL_ROOT_PASSWORD
+      - key: SITE_URL
+        value: https://detrustatt.com

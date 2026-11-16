@@ -55,6 +55,39 @@ MYSQLPASSWORD
    request. Log in to `/admin/login.php` with `admin` / `Admin@123` and
    change that password immediately.
 
+### On Render
+
+Render has no managed MySQL product, so `render.yaml` in this repo defines
+two services together: `dta-mysql` (a private service running the official
+`mysql:8.0` image with a persistent disk) and `decentralized-trust-attorneys`
+(the PHP app, built from the repo's `Dockerfile`). Deploy both together as a
+**Blueprint**:
+
+1. In the Render dashboard, **New** → **Blueprint**, pick this repo.
+   Render reads `render.yaml` and shows both services it's about to create.
+2. Review and approve. Render provisions the database first, generates a
+   random `MYSQL_ROOT_PASSWORD` for it, then builds and starts the app.
+3. The app's `MYSQLHOST` / `MYSQLPORT` / `MYSQLPASSWORD` variables are wired
+   automatically via `fromService` in `render.yaml` — pointing them at the
+   `dta-mysql` service's actual internal host/port and its generated
+   password. **This is the Render equivalent of Railway's `${{ServiceName.VAR}}`
+   reference variables** — the exact mechanism whose misconfiguration broke
+   this app's database connection once before (see the Railway section
+   above). On Render it's set in code (the Blueprint file) rather than typed
+   into the dashboard, so it shouldn't drift the same way — but if a
+   database connection error ever shows up again, check these `fromService`
+   blocks in `render.yaml` first, same as you'd check Railway's reference
+   variables.
+4. Add the custom domain (e.g. `detrustatt.com`) to the
+   `decentralized-trust-attorneys` service under **Settings → Custom Domains**,
+   then create the CNAME/A record Render shows you at your domain registrar.
+5. Set `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` as variables on
+   the app service if you want real outgoing email — these aren't carried
+   over automatically from any previous host.
+6. Log in to `/admin/login.php` with `admin` / `Admin@123` and change that
+   password immediately — this is seeded automatically into any brand-new,
+   empty database.
+
 ### Non-Railway hosts (cPanel, etc.)
 
 If the `MYSQL*` environment variables aren't set at all, `config.php` falls
