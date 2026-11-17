@@ -39,13 +39,13 @@ define('SMTP_PORT', (int) env_or('SMTP_PORT', '587'));
 define('SMTP_USER', env_or('SMTP_USER', ''));
 define('SMTP_PASS', env_or('SMTP_PASS', ''));
 define('SMTP_SECURE', env_or('SMTP_SECURE', 'tls')); // 'tls' or 'ssl'
-define('SMTP_FROM', env_or('SMTP_FROM', 'no-reply@dectrustattorney.com'));
+define('SMTP_FROM', env_or('SMTP_FROM', 'no-reply@dectruattneys.com'));
 define('SMTP_FROM_NAME', env_or('SMTP_FROM_NAME', 'DecTrust Attorney'));
 
 // ---- Site settings ----
 define('SITE_NAME', 'DecTrust Attorney');
-define('SITE_URL', env_or('SITE_URL', 'https://dectrustattorney.com')); // update to your live domain
-define('SUPPORT_EMAIL', 'contact@dectrustattorney.com');
+define('SITE_URL', env_or('SITE_URL', 'https://dectruattneys.com')); // update to your live domain
+define('SUPPORT_EMAIL', 'contact@dectruattneys.com');
 define('SUPPORT_PHONE', '(307) 555-0123');
 
 // ---- Session ----
