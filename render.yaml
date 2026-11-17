@@ -27,7 +27,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     domains:
-      - detrustatt.com
+      - dectruattneys.com
     envVars:
       - key: MYSQLHOST
         fromService:
@@ -49,4 +49,4 @@ services:
           name: dta-mysql
           envVarKey: MYSQL_ROOT_PASSWORD
       - key: SITE_URL
-        value: https://detrustatt.com
+        value: https://dectruattneys.com
