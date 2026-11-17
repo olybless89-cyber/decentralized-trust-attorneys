@@ -26,6 +26,8 @@ services:
     plan: starter
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    domains:
+      - detrustatt.com
     envVars:
       - key: MYSQLHOST
         fromService:
